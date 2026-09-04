@@ -131,15 +131,6 @@ export async function up(queryInterface, Sequelize) {
   await queryInterface.addIndex("tasks", ["category", "status"], {
     name: "tasks_category_status_idx",
   });
-
-  await queryInterface.addIndex(
-    "tasks",
-    ["location"],
-    {
-      name: "tasks_location_spatial_idx",
-      type: "SPATIAL",
-    }
-  );
 }
 
 export async function down(queryInterface) {
