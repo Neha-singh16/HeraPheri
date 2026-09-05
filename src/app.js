@@ -1,13 +1,38 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import taskExecutionRoutes from "./routes/taskExecutionRoutes.js";
+import taskReviewRoutes from "./routes/taskReviewRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import paymentWebhookRoutes from "./routes/paymentWebhookRoutes.js";
 
 const app = express();
 
 app.use(helmet());
 app.use(cors());
+
+// Webhook must receive the raw request body.
+app.use(
+  "/api/v1/payments/webhook",
+  express.raw({ type: "application/json" }),
+  paymentWebhookRoutes
+);
+
 app.use(express.json());
 
+app.use(
+  "/api/v1/tasks",
+  taskExecutionRoutes
+);
+
+app.use(
+  "/api/v1/tasks",
+  taskReviewRoutes
+);
+app.use(
+  "/api/v1/payments",
+  paymentRoutes
+);
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,

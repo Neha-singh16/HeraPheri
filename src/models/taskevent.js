@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../src/config/database.js";
+import sequelize from "../config/database.js";
 
 const TaskEvent = sequelize.define(
   "TaskEvent",

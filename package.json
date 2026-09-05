@@ -1,11 +1,11 @@
 {
   "name": "herapheri",
   "version": "1.0.0",
-  "description":"HEREPHERI - Delegate your work, get your time back",
+  "description": "HEREPHERI - Delegate your work, get your time back",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-     "dev": "nodemon src/server.js",
+    "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "db:migrate": "npx sequelize-cli db:migrate --config src/config/sequelize-config.cjs",
     "db:migrate:undo": "npx sequelize-cli db:migrate:undo --config src/config/sequelize-config.cjs",
@@ -14,13 +14,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-   "type": "module",
+  "type": "module",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "google-auth-library": "^11.0.2",
     "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.3",
+    "razorpay": "^2.9.8",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
