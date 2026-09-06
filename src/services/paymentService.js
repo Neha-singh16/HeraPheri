@@ -57,6 +57,12 @@ export async function createPaymentOrder(taskId, requesterId) {
       (Number(task.reward_amount) + platformFee) * 100,
     );
 
+    const order = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: task.id,
+    });
+
     const payment = await Payment.create(
       {
         task_id: task.id,
@@ -90,6 +96,7 @@ export async function createPaymentOrder(taskId, requesterId) {
 
 export async function verifyPayment({
   paymentId,
+  requesterId,
   razorpayOrderId,
   razorpayPaymentId,
   razorpaySignature,
@@ -99,6 +106,7 @@ export async function verifyPayment({
     const payment = await Payment.findOne({
       where: {
         id: paymentId,
+        requester_id: requesterId,
         provider_order_id: razorpayOrderId,
       },
       transaction,

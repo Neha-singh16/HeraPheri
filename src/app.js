@@ -2,9 +2,13 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import taskExecutionRoutes from "./routes/taskExecutionRoutes.js";
+import taskAssignmentRoutes from "./routes/taskAssignmentRoutes.js";
 import taskReviewRoutes from "./routes/taskReviewRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+
 
 const app = express();
 
@@ -15,24 +19,23 @@ app.use(cors());
 app.use(
   "/api/v1/payments/webhook",
   express.raw({ type: "application/json" }),
-  paymentWebhookRoutes
+  paymentWebhookRoutes,
 );
+
 
 app.use(express.json());
-
 app.use(
-  "/api/v1/tasks",
-  taskExecutionRoutes
+  "/api/v1/users",
+  userRoutes
 );
 
-app.use(
-  "/api/v1/tasks",
-  taskReviewRoutes
-);
-app.use(
-  "/api/v1/payments",
-  paymentRoutes
-);
+app.use("/api/v1/auth", authRoutes);
+
+app.use("/api/v1/tasks", taskExecutionRoutes);
+app.use("/api/v1/tasks", taskAssignmentRoutes);
+
+app.use("/api/v1/tasks", taskReviewRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,

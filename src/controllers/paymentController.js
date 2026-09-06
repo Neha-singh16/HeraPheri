@@ -51,6 +51,7 @@ export async function verifyPaymentController(
 
     const payment = await verifyPayment({
       paymentId,
+      requesterId: req.user.id,
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,

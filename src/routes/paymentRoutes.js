@@ -1,4 +1,5 @@
 import express from "express";
+import { authenticate } from "../middleware/authMiddleware.js";
 
 import {
   createPaymentOrderController,
@@ -9,11 +10,13 @@ const router = express.Router();
 
 router.post(
   "/tasks/:taskId/order",
+  authenticate,
   createPaymentOrderController
 );
 
 router.post(
   "/:paymentId/verify",
+  authenticate,
   verifyPaymentController
 );
 export default router;

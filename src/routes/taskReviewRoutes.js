@@ -1,4 +1,7 @@
 import express from "express";
+import {
+  authenticate,
+} from "../middleware/authMiddleware.js";
 
 import {
   approveTaskController,
@@ -9,12 +12,13 @@ const router = express.Router();
 
 router.post(
   "/:taskId/approve",
+  authenticate,
   approveTaskController
 );
 
 router.post(
   "/:taskId/disputes",
+  authenticate,
   createDisputeController
 );
-
 export default router;

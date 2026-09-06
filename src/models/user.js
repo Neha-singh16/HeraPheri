@@ -38,18 +38,28 @@ const User = sequelize.define(
 
     password_hash: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    auth_provider: {
+      type: DataTypes.ENUM("LOCAL", "GOOGLE"),
       allowNull: false,
+      defaultValue: "LOCAL",
     },
 
+    google_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
     account_status: {
-      type: DataTypes.ENUM(
-        "ACTIVE",
-        "SUSPENDED",
-        "BANNED",
-        "DEACTIVATED"
-      ),
+      type: DataTypes.ENUM("ACTIVE", "SUSPENDED", "BANNED", "DEACTIVATED"),
       allowNull: false,
       defaultValue: "ACTIVE",
+    },
+    role: {
+      type: DataTypes.ENUM("USER", "ADMIN"),
+      allowNull: false,
+      defaultValue: "USER",
     },
   },
   {
@@ -57,7 +67,7 @@ const User = sequelize.define(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
-  }
+  },
 );
 
 export default User;

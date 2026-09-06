@@ -1,5 +1,7 @@
 import express from "express";
-
+import {
+  authenticate,
+} from "../middleware/authMiddleware.js";
 import {
   startTaskController,
   submitProofController,
@@ -9,11 +11,13 @@ const router = express.Router();
 
 router.post(
   "/:taskId/start",
+  authenticate,
   startTaskController
 );
 
 router.post(
   "/:taskId/proofs",
+  authenticate,
   submitProofController
 );
 

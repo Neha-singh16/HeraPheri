@@ -2,14 +2,18 @@ import express from "express";
 import {
   authenticate,
 } from "../middleware/authMiddleware.js";
-import { acceptTaskController } from "../controllers/taskAssignmentController.js";
 
 const router = express.Router();
 
-router.post(
-  "/:taskId/accept",
+router.get(
+  "/me",
   authenticate,
-  acceptTaskController
+  (req, res) => {
+    res.json({
+      success: true,
+      data: req.user,
+    });
+  }
 );
 
 export default router;

@@ -8,6 +8,8 @@ import Dispute from "./dispute.js";
 import Payment from "./payment.js";
 import LedgerEntry from "./ledgerentry.js";
 import PaymentWebhookEvent from "./paymentwebhookevent.js";
+import RefreshToken from "./refreshtoken.js";
+
 // User → Executor profile
 User.hasOne(ExecutorProfile, {
   foreignKey: "user_id",
@@ -198,6 +200,18 @@ LedgerEntry.belongsTo(User, {
   foreignKey: "user_id",
   as: "user",
 });
+
+User.hasMany(RefreshToken, {
+  foreignKey: "user_id",
+  as: "refreshTokens",
+});
+
+RefreshToken.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
+
 export {
   User,
   ExecutorProfile,
@@ -209,4 +223,5 @@ export {
   Payment,
   LedgerEntry,
   PaymentWebhookEvent,
+  RefreshToken,
 };
