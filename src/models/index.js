@@ -10,6 +10,7 @@ import LedgerEntry from "./ledgerentry.js";
 import PaymentWebhookEvent from "./paymentwebhookevent.js";
 import RefreshToken from "./refreshtoken.js";
 import Notification from "./notification.js";
+import Verification from "./verification.js";
 
 // User → Executor profile
 User.hasOne(ExecutorProfile, {
@@ -226,4 +227,5 @@ export {
   PaymentWebhookEvent,
   RefreshToken,
   Notification,
+  Verification,
 };

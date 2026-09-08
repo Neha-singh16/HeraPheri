@@ -10,6 +10,7 @@ import {
   updateAvailabilityController,
   updateLocationController,
 } from "../controllers/executorProfileController.js";
+import { getMyTrustController} from "../controllers/verificationController.js"
 
 const router = express.Router();
 
@@ -34,6 +35,12 @@ router.patch(
 router.patch(
   "/location",
   updateLocationController
+);
+
+router.get(
+  "/trust",
+  authenticate,
+  getMyTrustController
 );
 
 export default router;

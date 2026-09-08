@@ -14,6 +14,8 @@ import executorProfileRoutes from "./routes/executorProfileRoutes.js";
 import taskDiscoveryRoutes from "./routes/taskDiscoveryRoutes.js";
 import matchingRoutes from "./routes/matchingRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import verificationRoutes from "./routes/verificationRoutes.js";
+ 
 
 const app = express();
 
@@ -29,7 +31,7 @@ app.use(
 
 app.use(express.json());
 app.use("/api/v1/users", userRoutes);
-
+app.use("/api/v1/verifications", verificationRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/executor-profile", executorProfileRoutes);
 

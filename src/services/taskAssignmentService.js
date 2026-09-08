@@ -1,9 +1,6 @@
-
-
 import sequelize from "../config/database.js";
-import {
-  createNotification,
-} from "./notificationService.js";
+import { createNotification } from "./notificationService.js";
+import { emitNotificationToUser } from "../socket/index.js";
 
 import {
   Task,
@@ -12,20 +9,14 @@ import {
   ExecutorProfile,
 } from "../models/index.js";
 
-import {
-  createTaskEvent,
-} from "./taskEventService.js";
+import { createTaskEvent } from "./taskEventService.js";
 
 const MAX_ACTIVE_TASKS = 3;
 const LOCATION_FRESHNESS_MINUTES = 30;
 
 // Accept a task safely and atomically.
-export async function acceptTask(
-  taskId,
-  executorId
-) {
-  const transaction =
-    await sequelize.transaction();
+export async function acceptTask(taskId, executorId) {
+  const transaction = await sequelize.transaction();
 
   try {
     // ---------------------------------------------------
@@ -47,22 +38,18 @@ export async function acceptTask(
 
     // Task must still be available.
     if (task.status !== "OPEN") {
-      throw new Error(
-        "Task is no longer available."
-      );
+      throw new Error("Task is no longer available.");
     }
 
     // Requester cannot execute their own task.
     if (task.requester_id === executorId) {
-      throw new Error(
-        "You cannot accept your own task."
-      );
+      throw new Error("You cannot accept your own task.");
     }
 
     // V1 does not automatically assign HIGH-risk work.
     if (task.risk_level === "HIGH") {
       throw new Error(
-        "HIGH-risk tasks cannot be accepted through V1 matching."
+        "HIGH-risk tasks cannot be accepted through V1 matching.",
       );
     }
 
@@ -83,105 +70,68 @@ export async function acceptTask(
     // capacity check serial for that Executor.
     // ---------------------------------------------------
 
-    const executorProfile =
-      await ExecutorProfile.findOne({
-        where: {
-          user_id: executorId,
-        },
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
+    const executorProfile = await ExecutorProfile.findOne({
+      where: {
+        user_id: executorId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
     if (!executorProfile) {
-      throw new Error(
-        "Create an Executor profile first."
-      );
+      throw new Error("Create an Executor profile first.");
     }
 
     if (!executorProfile.is_available) {
-      throw new Error(
-        "Executor is not currently available."
-      );
+      throw new Error("Executor is not currently available.");
     }
 
     // ---------------------------------------------------
     // 3. Fetch and validate the user.
     // ---------------------------------------------------
-    const executor =
-      await User.findByPk(executorId, {
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
+    const executor = await User.findByPk(executorId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
     if (!executor) {
-      throw new Error(
-        "Executor not found."
-      );
+      throw new Error("Executor not found.");
     }
 
-    if (
-      executor.account_status !== "ACTIVE"
-    ) {
-      throw new Error(
-        "Executor account is not active."
-      );
+    if (executor.account_status !== "ACTIVE") {
+      throw new Error("Executor account is not active.");
     }
 
     // ---------------------------------------------------
     // 4. Check current workload.
     // ---------------------------------------------------
-    const activeTaskCount =
-      await TaskAssignment.count({
-        where: {
-          executor_id: executorId,
-          status: "ACTIVE",
-        },
-        transaction,
-      });
+    const activeTaskCount = await TaskAssignment.count({
+      where: {
+        executor_id: executorId,
+        status: "ACTIVE",
+      },
+      transaction,
+    });
 
-    if (
-      activeTaskCount >= MAX_ACTIVE_TASKS
-    ) {
-      throw new Error(
-        "Executor has reached the maximum active task limit."
-      );
+    if (activeTaskCount >= MAX_ACTIVE_TASKS) {
+      throw new Error("Executor has reached the maximum active task limit.");
     }
 
     // ---------------------------------------------------
     // 5. Medium-risk tasks need stronger reliability.
     // These rules mirror the Matching Engine.
     // ---------------------------------------------------
-    if (
-      task.risk_level === "MEDIUM"
-    ) {
-      if (
-        Number(
-          executorProfile.trust_score
-        ) < 60
-      ) {
-        throw new Error(
-          "Executor trust score is too low for this task."
-        );
+    if (task.risk_level === "MEDIUM") {
+      if (Number(executorProfile.trust_score) < 60) {
+        throw new Error("Executor trust score is too low for this task.");
       }
 
-      if (
-        Number(
-          executorProfile.completion_rate
-        ) < 80
-      ) {
-        throw new Error(
-          "Executor completion rate is too low for this task."
-        );
+      if (Number(executorProfile.completion_rate) < 80) {
+        throw new Error("Executor completion rate is too low for this task.");
       }
 
-      if (
-        Number(
-          executorProfile.on_time_rate
-        ) < 80
-      ) {
-        throw new Error(
-          "Executor on-time rate is too low for this task."
-        );
+      if (Number(executorProfile.on_time_rate) < 80) {
+        throw new Error("Executor on-time rate is too low for this task.");
       }
     }
 
@@ -195,43 +145,23 @@ export async function acceptTask(
     // - location exists
     // - location is recent
     // ---------------------------------------------------
-    if (
-      task.task_mode === "PHYSICAL" ||
-      task.task_mode === "HYBRID"
-    ) {
-      if (
-        !executorProfile.current_location
-      ) {
-        throw new Error(
-          "A current location is required for this task."
-        );
+    if (task.task_mode === "PHYSICAL" || task.task_mode === "HYBRID") {
+      if (!executorProfile.current_location) {
+        throw new Error("A current location is required for this task.");
       }
 
-      if (
-        !executorProfile.last_location_at
-      ) {
-        throw new Error(
-          "Executor location is outdated."
-        );
+      if (!executorProfile.last_location_at) {
+        throw new Error("Executor location is outdated.");
       }
 
       const locationAge =
-        Date.now() -
-        new Date(
-          executorProfile.last_location_at
-        ).getTime();
+        Date.now() - new Date(executorProfile.last_location_at).getTime();
 
-      const maxLocationAge =
-        LOCATION_FRESHNESS_MINUTES *
-        60 *
-        1000;
+      const maxLocationAge = LOCATION_FRESHNESS_MINUTES * 60 * 1000;
 
-      if (
-        locationAge >
-        maxLocationAge
-      ) {
+      if (locationAge > maxLocationAge) {
         throw new Error(
-          "Executor location is too old. Please update your location."
+          "Executor location is too old. Please update your location.",
         );
       }
     }
@@ -239,36 +169,32 @@ export async function acceptTask(
     // ---------------------------------------------------
     // 7. Final protection against an existing assignment.
     // ---------------------------------------------------
-    const existingAssignment =
-      await TaskAssignment.findOne({
-        where: {
-          task_id: taskId,
-          status: "ACTIVE",
-        },
-        transaction,
-        lock: transaction.LOCK.UPDATE,
-      });
+    const existingAssignment = await TaskAssignment.findOne({
+      where: {
+        task_id: taskId,
+        status: "ACTIVE",
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
     if (existingAssignment) {
-      throw new Error(
-        "Task has already been assigned."
-      );
+      throw new Error("Task has already been assigned.");
     }
 
     // ---------------------------------------------------
     // 8. Create assignment.
     // ---------------------------------------------------
-    const assignment =
-      await TaskAssignment.create(
-        {
-          task_id: taskId,
-          executor_id: executorId,
-          status: "ACTIVE",
-        },
-        {
-          transaction,
-        }
-      );
+    const assignment = await TaskAssignment.create(
+      {
+        task_id: taskId,
+        executor_id: executorId,
+        status: "ACTIVE",
+      },
+      {
+        transaction,
+      },
+    );
 
     // ---------------------------------------------------
     // 9. Update task state.
@@ -279,7 +205,7 @@ export async function acceptTask(
       },
       {
         transaction,
-      }
+      },
     );
 
     // ---------------------------------------------------
@@ -296,34 +222,57 @@ export async function acceptTask(
       transaction,
     });
 
+    
+const notification =
+  await createNotification({
+    userId: task.requester_id,
 
-await createNotification({
-  userId: task.requester_id,
+    type: "TASK_ASSIGNED",
 
-  type: "TASK_ASSIGNED",
+    title: "Task accepted",
 
-  title: "Task accepted",
+    message:
+      "Your task has been accepted by an Executor.",
 
-  message:
-    "Your task has been accepted by an Executor.",
+    data: {
+      taskId: task.id,
+      assignmentId: assignment.id,
+      executorId,
+    },
 
-  data: {
-    taskId: task.id,
-    assignmentId: assignment.id,
-    executorId,
-  },
+    transaction,
+  });
 
-  transaction,
-});
-    // ---------------------------------------------------
-    // 11. Commit everything together.
-    // ---------------------------------------------------
-    await transaction.commit();
+await transaction.commit();
 
-    return assignment;
+// -----------------------------------------------
+// IMPORTANT:
+// Emit only AFTER the DB transaction succeeds.
+// -----------------------------------------------
+try {
+  emitNotificationToUser(
+    task.requester_id,
+    notification
+  );
+} catch (socketError) {
+  /*
+    Socket failure must not make a successful
+    database transaction look like a failure.
+
+    The notification is already persisted in MySQL,
+    so the client can fetch it later through:
+
+    GET /api/v1/notifications
+  */
+  console.error(
+    "Realtime notification failed:",
+    socketError.message
+  );
+}
+
+return assignment;
 
   } catch (error) {
-
     await transaction.rollback();
 
     throw error;
