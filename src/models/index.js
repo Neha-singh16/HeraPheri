@@ -9,6 +9,7 @@ import Payment from "./payment.js";
 import LedgerEntry from "./ledgerentry.js";
 import PaymentWebhookEvent from "./paymentwebhookevent.js";
 import RefreshToken from "./refreshtoken.js";
+import Notification from "./notification.js";
 
 // User → Executor profile
 User.hasOne(ExecutorProfile, {
@@ -224,4 +225,5 @@ export {
   LedgerEntry,
   PaymentWebhookEvent,
   RefreshToken,
+  Notification,
 };

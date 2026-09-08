@@ -32,10 +32,9 @@ const User = sequelize.define(
 
     phone: {
       type: DataTypes.STRING(20),
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
-
     password_hash: {
       type: DataTypes.TEXT,
       allowNull: true,

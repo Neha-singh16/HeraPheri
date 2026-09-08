@@ -1,6 +1,9 @@
-import { Op } from "sequelize";
+
+
 import sequelize from "../config/database.js";
-import { createTaskEvent } from "./taskEventService.js";
+import {
+  createNotification,
+} from "./notificationService.js";
 
 import {
   Task,
@@ -9,92 +12,320 @@ import {
   ExecutorProfile,
 } from "../models/index.js";
 
-export async function acceptTask(taskId, executorId) {
-  const transaction = await sequelize.transaction();
+import {
+  createTaskEvent,
+} from "./taskEventService.js";
+
+const MAX_ACTIVE_TASKS = 3;
+const LOCATION_FRESHNESS_MINUTES = 30;
+
+// Accept a task safely and atomically.
+export async function acceptTask(
+  taskId,
+  executorId
+) {
+  const transaction =
+    await sequelize.transaction();
+
   try {
+    // ---------------------------------------------------
+    // 1. Lock the task.
+    // This prevents two Executors from claiming it
+    // at the same time.
+    // ---------------------------------------------------
     const task = await Task.findOne({
       where: {
         id: taskId,
       },
       transaction,
-      //   “I'm going to modify this task. Lock its row while this transaction is working.”
       lock: transaction.LOCK.UPDATE,
     });
 
     if (!task) {
-      throw new Error("Task not found");
+      throw new Error("Task not found.");
     }
 
+    // Task must still be available.
     if (task.status !== "OPEN") {
-      throw new Error("Task is no longer available.");
+      throw new Error(
+        "Task is no longer available."
+      );
     }
 
-    const executor = await User.findByPk(executorId, {
-      include: [
-        {
-          model: ExecutorProfile,
-          as: "executorProfile",
+    // Requester cannot execute their own task.
+    if (task.requester_id === executorId) {
+      throw new Error(
+        "You cannot accept your own task."
+      );
+    }
+
+    // V1 does not automatically assign HIGH-risk work.
+    if (task.risk_level === "HIGH") {
+      throw new Error(
+        "HIGH-risk tasks cannot be accepted through V1 matching."
+      );
+    }
+
+    // ---------------------------------------------------
+    // 2. Lock the Executor profile too.
+    //
+    // Why?
+    //
+    // Imagine Executor A accepts:
+    // Task 1
+    // Task 2
+    // Task 3
+    // Task 4
+    //
+    // simultaneously.
+    //
+    // Locking the Executor profile makes the active-task
+    // capacity check serial for that Executor.
+    // ---------------------------------------------------
+
+    const executorProfile =
+      await ExecutorProfile.findOne({
+        where: {
+          user_id: executorId,
         },
-      ],
-      transaction,
-    });
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+    if (!executorProfile) {
+      throw new Error(
+        "Create an Executor profile first."
+      );
+    }
+
+    if (!executorProfile.is_available) {
+      throw new Error(
+        "Executor is not currently available."
+      );
+    }
+
+    // ---------------------------------------------------
+    // 3. Fetch and validate the user.
+    // ---------------------------------------------------
+    const executor =
+      await User.findByPk(executorId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
 
     if (!executor) {
-      throw new Error("Executor not found.");
+      throw new Error(
+        "Executor not found."
+      );
     }
 
-    if (executor.account_status !== "ACTIVE") {
-      throw new Error("Executor account is not active.");
+    if (
+      executor.account_status !== "ACTIVE"
+    ) {
+      throw new Error(
+        "Executor account is not active."
+      );
     }
 
-    if (!executor.executorProfile || !executor.executorProfile.is_available) {
-      throw new Error("Executor is not currently available.");
+    // ---------------------------------------------------
+    // 4. Check current workload.
+    // ---------------------------------------------------
+    const activeTaskCount =
+      await TaskAssignment.count({
+        where: {
+          executor_id: executorId,
+          status: "ACTIVE",
+        },
+        transaction,
+      });
+
+    if (
+      activeTaskCount >= MAX_ACTIVE_TASKS
+    ) {
+      throw new Error(
+        "Executor has reached the maximum active task limit."
+      );
     }
 
-    const existingAssignment = await TaskAssignment.findOne({
-      where: {
-        task_id: taskId,
-        status: "ACTIVE",
-      },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
+    // ---------------------------------------------------
+    // 5. Medium-risk tasks need stronger reliability.
+    // These rules mirror the Matching Engine.
+    // ---------------------------------------------------
+    if (
+      task.risk_level === "MEDIUM"
+    ) {
+      if (
+        Number(
+          executorProfile.trust_score
+        ) < 60
+      ) {
+        throw new Error(
+          "Executor trust score is too low for this task."
+        );
+      }
+
+      if (
+        Number(
+          executorProfile.completion_rate
+        ) < 80
+      ) {
+        throw new Error(
+          "Executor completion rate is too low for this task."
+        );
+      }
+
+      if (
+        Number(
+          executorProfile.on_time_rate
+        ) < 80
+      ) {
+        throw new Error(
+          "Executor on-time rate is too low for this task."
+        );
+      }
+    }
+
+    // ---------------------------------------------------
+    // 6. Physical / Hybrid tasks need a fresh location.
+    //
+    // We don't force a distance check here because the
+    // candidate search radius can be chosen by the client.
+    //
+    // What we DO enforce:
+    // - location exists
+    // - location is recent
+    // ---------------------------------------------------
+    if (
+      task.task_mode === "PHYSICAL" ||
+      task.task_mode === "HYBRID"
+    ) {
+      if (
+        !executorProfile.current_location
+      ) {
+        throw new Error(
+          "A current location is required for this task."
+        );
+      }
+
+      if (
+        !executorProfile.last_location_at
+      ) {
+        throw new Error(
+          "Executor location is outdated."
+        );
+      }
+
+      const locationAge =
+        Date.now() -
+        new Date(
+          executorProfile.last_location_at
+        ).getTime();
+
+      const maxLocationAge =
+        LOCATION_FRESHNESS_MINUTES *
+        60 *
+        1000;
+
+      if (
+        locationAge >
+        maxLocationAge
+      ) {
+        throw new Error(
+          "Executor location is too old. Please update your location."
+        );
+      }
+    }
+
+    // ---------------------------------------------------
+    // 7. Final protection against an existing assignment.
+    // ---------------------------------------------------
+    const existingAssignment =
+      await TaskAssignment.findOne({
+        where: {
+          task_id: taskId,
+          status: "ACTIVE",
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
 
     if (existingAssignment) {
-      throw new Error("Task has already been assigned.");
+      throw new Error(
+        "Task has already been assigned."
+      );
     }
 
-    const assignment = await TaskAssignment.create(
-      {
-        task_id: taskId,
-        executor_id: executorId,
-        status: "ACTIVE",
-      },
-      { transaction },
-    );
+    // ---------------------------------------------------
+    // 8. Create assignment.
+    // ---------------------------------------------------
+    const assignment =
+      await TaskAssignment.create(
+        {
+          task_id: taskId,
+          executor_id: executorId,
+          status: "ACTIVE",
+        },
+        {
+          transaction,
+        }
+      );
 
-    await createTaskEvent({
-      taskId,
-      actorUserId: executorId,
-      eventType: "TASK_ASSIGNED",
-      metadata: {
-        assignmentId: assignment.id,
-      },
-      transaction,
-    });
-
+    // ---------------------------------------------------
+    // 9. Update task state.
+    // ---------------------------------------------------
     await task.update(
       {
         status: "ASSIGNED",
       },
       {
         transaction,
-      },
+      }
     );
+
+    // ---------------------------------------------------
+    // 10. Create audit event.
+    // ---------------------------------------------------
+    await createTaskEvent({
+      taskId,
+      actorUserId: executorId,
+      eventType: "TASK_ASSIGNED",
+      metadata: {
+        assignmentId: assignment.id,
+        executorId,
+      },
+      transaction,
+    });
+
+
+await createNotification({
+  userId: task.requester_id,
+
+  type: "TASK_ASSIGNED",
+
+  title: "Task accepted",
+
+  message:
+    "Your task has been accepted by an Executor.",
+
+  data: {
+    taskId: task.id,
+    assignmentId: assignment.id,
+    executorId,
+  },
+
+  transaction,
+});
+    // ---------------------------------------------------
+    // 11. Commit everything together.
+    // ---------------------------------------------------
     await transaction.commit();
+
     return assignment;
+
   } catch (error) {
+
     await transaction.rollback();
+
     throw error;
   }
 }

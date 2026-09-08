@@ -8,7 +8,12 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import taskRoutes from "./routes/taskRoutes.js";
 
+import executorProfileRoutes from "./routes/executorProfileRoutes.js";
+import taskDiscoveryRoutes from "./routes/taskDiscoveryRoutes.js";
+import matchingRoutes from "./routes/matchingRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 
@@ -22,18 +27,19 @@ app.use(
   paymentWebhookRoutes,
 );
 
-
 app.use(express.json());
-app.use(
-  "/api/v1/users",
-  userRoutes
-);
+app.use("/api/v1/users", userRoutes);
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/executor-profile", executorProfileRoutes);
 
+app.use("/api/v1/tasks", taskDiscoveryRoutes);
+app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/tasks", taskExecutionRoutes);
+app.use("/api/v1/matching", matchingRoutes);
 app.use("/api/v1/tasks", taskAssignmentRoutes);
 
+app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/tasks", taskReviewRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.get("/health", (req, res) => {

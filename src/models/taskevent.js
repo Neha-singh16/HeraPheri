@@ -29,6 +29,7 @@ const TaskEvent = sequelize.define(
         "PROOF_SUBMITTED",
         "TASK_APPROVED",
         "TASK_DISPUTED",
+        "TASK_UPDATED",
         "TASK_CANCELLED",
         "TASK_EXPIRED",
         "PAYMENT_HELD",
