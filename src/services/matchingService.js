@@ -60,7 +60,7 @@ export async function getTaskMatches({
    Digital: Location is not required.
     */
   const matches = await sequelize.query(
-    ` SELECT
+    `SELECT
      ep.user_id AS executor_id,
     u.name, u.email, ep.bio,
     ep.trust_score, ep.completion_rate, 
@@ -97,7 +97,46 @@ export async function getTaskMatches({
        (
         ST_Distance_Sphere(
          t.location, 
-         ep.current_location) / :radiusMeters ) ) * 100 * 0.20 ) ) END AS match_score FROM tasks t INNER JOIN executor_profiles ep ON 1 = 1 INNER JOIN users u ON u.id = ep.user_id WHERE t.id = :taskId -- Never recommend the requester themselves. AND ep.user_id != :requesterId -- Suspended/banned/deactivated users are excluded. AND u.account_status = 'ACTIVE' -- Executor must currently be available. AND ep.is_available = TRUE -- Prevent overload. AND ( SELECT COUNT(*) FROM task_assignments ta WHERE ta.executor_id = ep.user_id AND ta.status = 'ACTIVE' ) < ${MAX_ACTIVE_TASKS} /* MEDIUM-risk tasks require stronger reliability. LOW-risk tasks can use the normal eligibility rules. */ AND ( t.risk_level = 'LOW' OR ( t.risk_level = 'MEDIUM' AND ep.trust_score >= 60 AND ep.completion_rate >= 80 AND ep.on_time_rate >= 80 ) ) /* Physical and Hybrid tasks require: 1. current location 2. recent location update 3. executor inside radius */ AND ( t.task_mode = 'DIGITAL' OR ( t.task_mode IN ('PHYSICAL', 'HYBRID') AND t.location IS NOT NULL AND ep.current_location IS NOT NULL AND ep.last_location_at >= ( NOW() - INTERVAL ${LOCATION_FRESHNESS_MINUTES} MINUTE ) AND ST_Distance_Sphere( t.location, ep.current_location ) <= :radiusMeters ) ) ORDER BY match_score DESC LIMIT :candidateLimit; `,
+         ep.current_location) / :radiusMeters ) ) * 100 * 0.20 ) ) 
+         END AS match_score
+         FROM
+         tasks t INNER JOIN executor_profiles ep ON 1 = 1 
+         INNER JOIN users u ON u.id = ep.user_id
+         LEFT JOIN verifications v
+         ON v.user_id = ep.user_id
+         AND v.verification_type = 'IDENTITY'
+         WHERE t.id = :taskId
+         -- Never recommend the requester themselves. 
+         AND
+          ep.user_id != :requesterId
+        -- Suspended/banned/deactivated users are excluded. 
+        AND 
+        u.account_status = 'ACTIVE' 
+        -- Executor must currently be available. 
+        AND 
+        ep.is_available = TRUE 
+        -- Prevent overload.
+         AND 
+         ( SELECT COUNT(*) 
+         FROM task_assignments
+          ta WHERE ta.executor_id = ep.user_id 
+          AND
+           ta.status = 'ACTIVE' ) < ${MAX_ACTIVE_TASKS} /* MEDIUM-risk tasks require stronger reliability. LOW-risk tasks can use the normal eligibility rules. */      
+          AND (
+           -- LOW-risk tasks only need the normal eligibility rules.
+           t.risk_level = 'LOW'
+          OR (
+       -- MEDIUM-risk tasks need stronger trust.
+       t.risk_level = 'MEDIUM'
+         AND v.status = 'VERIFIED'
+        AND ep.trust_score >= 60
+       AND ep.completion_rate >= 80
+       AND ep.on_time_rate >= 80
+  )
+)
+              /* Physical and Hybrid tasks require: 1. current location 2. recent location update 3. executor inside radius */
+               AND ( t.task_mode = 'DIGITAL' OR ( t.task_mode IN ('PHYSICAL', 'HYBRID')
+                AND t.location IS NOT NULL AND ep.current_location IS NOT NULL AND ep.last_location_at >= ( NOW() - INTERVAL ${LOCATION_FRESHNESS_MINUTES} MINUTE ) AND ST_Distance_Sphere( t.location, ep.current_location ) <= :radiusMeters ) ) ORDER BY match_score DESC LIMIT :candidateLimit;`,
     { replacements, type: QueryTypes.SELECT },
   );
   return matches;

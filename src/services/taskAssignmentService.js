@@ -7,6 +7,7 @@ import {
   TaskAssignment,
   User,
   ExecutorProfile,
+  Verification,
 } from "../models/index.js";
 
 import { createTaskEvent } from "./taskEventService.js";
@@ -101,6 +102,32 @@ export async function acceptTask(taskId, executorId) {
     if (executor.account_status !== "ACTIVE") {
       throw new Error("Executor account is not active.");
     }
+// ---------------------------------------------------
+// Verify Executor identity status.
+//
+// IMPORTANT:
+// We check this again during ACCEPT.
+// Matching recommendations are not trusted blindly.
+// ---------------------------------------------------
+const verification =
+  await Verification.findOne({
+    where: {
+      user_id: executorId,
+      verification_type: "IDENTITY",
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+
+// Medium-risk tasks require verified identity.
+if (
+  task.risk_level === "MEDIUM" &&
+  verification?.status !== "VERIFIED"
+) {
+  throw new Error(
+    "Identity verification is required for medium-risk tasks."
+  );
+}
 
     // ---------------------------------------------------
     // 4. Check current workload.

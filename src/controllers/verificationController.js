@@ -4,8 +4,10 @@ import {
   approveVerification,
   rejectVerification,
 } from "../services/verificationService.js";
-import { recalculateTrustScore,getTrustProfile } from "../services/trustService.js";
-
+import {
+  recalculateTrustScore,
+  getTrustProfile,
+} from "../services/trustService.js";
 
 // USER
 export async function getMyVerificationController(req, res) {
@@ -96,6 +98,10 @@ export async function rejectVerificationController(req, res) {
       provider: req.body.provider || "MANUAL",
     });
 
+    // Verification changed, so trust must
+    // be recalculated immediately.
+    await recalculateTrustScore(req.params.userId);
+
     return res.status(200).json({
       success: true,
 
@@ -111,45 +117,25 @@ export async function rejectVerificationController(req, res) {
   }
 }
 
-
-
-export async function getMyTrustController(
-  req,
-  res
-) {
+export async function getMyTrustController(req, res) {
   try {
-    const profile =
-      await getTrustProfile(
-        req.user.id
-      );
+    const profile = await getTrustProfile(req.user.id);
 
     return res.status(200).json({
       success: true,
 
       data: {
-        trustScore:
-          Number(
-            profile.trust_score
-          ),
+        trustScore: Number(profile.trust_score),
 
-        completionRate:
-          Number(
-            profile.completion_rate
-          ),
+        completionRate: Number(profile.completion_rate),
 
-        onTimeRate:
-          Number(
-            profile.on_time_rate
-          ),
+        onTimeRate: Number(profile.on_time_rate),
 
-        completedTasks:
-          profile.completed_tasks,
+        completedTasks: profile.completed_tasks,
 
-        totalTasks:
-          profile.total_tasks,
+        totalTasks: profile.total_tasks,
       },
     });
-
   } catch (error) {
     return res.status(400).json({
       success: false,
