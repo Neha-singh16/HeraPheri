@@ -8,6 +8,9 @@ import AppLayout from "./components/AppLayout.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import MyTasks from "./pages/MyTasks.jsx";
+import FindTasks from "./pages/FindTasks.jsx";
+import TaskDetails from "./pages/TaskDetails.jsx";
 
 function App() {
   return (
@@ -28,12 +31,9 @@ function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
 
-          <Route path="/tasks" element={<div>My Tasks coming soon.</div>} />
-
-          <Route
-            path="/find-tasks"
-            element={<div>Find Tasks coming soon.</div>}
-          />
+          <Route path="/tasks" element={<MyTasks />} />
+          <Route path="/tasks/:taskId" element={<TaskDetails />} />
+          <Route path="/find-tasks" element={<FindTasks />} />
 
           <Route
             path="/executor-profile"

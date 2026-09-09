@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
 } from "react";
 
@@ -26,6 +27,17 @@ export function AuthProvider({
 
   const [loading, setLoading] =
     useState(false);
+
+  useEffect(() => {
+    function handleAuthLogout() {
+      setUser(null);
+    }
+
+    window.addEventListener("auth:logout", handleAuthLogout);
+    return () => {
+      window.removeEventListener("auth:logout", handleAuthLogout);
+    };
+  }, []);
 
  // LOGIN
   async function login(
