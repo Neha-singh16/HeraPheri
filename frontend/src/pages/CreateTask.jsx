@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
-import api from "../api/client.js";
+import api from "../api/client.jsx";
+
 
 const initialForm = {
   title: "",
@@ -139,17 +140,13 @@ export default function CreateTask() {
               >
                 <option value="">Select category</option>
 
-                <option value="ERRAND">Errand</option>
+                <option value="GO">Go</option>
 
-                <option value="DELIVERY">Pickup / Delivery</option>
+                <option value="GET">Get / Pickup / Delivery</option>
 
                 <option value="CHECK">Check / Inspect</option>
 
-                <option value="RESEARCH">Research</option>
-
-                <option value="DATA_ENTRY">Data Entry</option>
-
-                <option value="OTHER">Other</option>
+                <option value="DIGITAL">Digital / Research</option>
               </select>
             </label>
 
