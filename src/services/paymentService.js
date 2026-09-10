@@ -42,7 +42,7 @@ export async function createPaymentOrder(taskId, requesterId) {
       transaction,
     });
 
-    if (existingPayment) {
+    if (existingPayment && ["HELD", "RELEASED"].includes(existingPayment.status)) {
       throw new Error("Payment already exists for this task.");
     }
 
@@ -61,23 +61,36 @@ export async function createPaymentOrder(taskId, requesterId) {
       receipt: task.id,
     });
 
-    const payment = await Payment.create(
-      {
-        task_id: task.id,
-        requester_id: requesterId,
-        executor_id: assignment.executor_id,
-        provider: "RAZORPAY",
-        provider_order_id: order.id,
-        gross_amount: Number(task.reward_amount) + platformFee,
-        platform_fee: platformFee,
-        executor_amount: executorAmount,
-        currency: "INR",
-        status: "PENDING",
-      },
-      {
-        transaction,
-      },
-    );
+    const payment = existingPayment
+      ? await existingPayment.update(
+          {
+            provider_order_id: order.id,
+            provider_payment_id: null,
+            gross_amount: Number(task.reward_amount) + platformFee,
+            platform_fee: platformFee,
+            executor_amount: executorAmount,
+            status: "PENDING",
+            paid_at: null,
+            released_at: null,
+            refunded_at: null,
+          },
+          { transaction },
+        )
+      : await Payment.create(
+          {
+            task_id: task.id,
+            requester_id: requesterId,
+            executor_id: assignment.executor_id,
+            provider: "RAZORPAY",
+            provider_order_id: order.id,
+            gross_amount: Number(task.reward_amount) + platformFee,
+            platform_fee: platformFee,
+            executor_amount: executorAmount,
+            currency: "INR",
+            status: "PENDING",
+          },
+          { transaction },
+        );
 
     await transaction.commit();
 

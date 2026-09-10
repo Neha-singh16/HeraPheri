@@ -200,7 +200,9 @@ export default function Payment() {
     - task is assigned/in progress
     - payment doesn't exist yet
   */
-  const canPay = ["ASSIGNED", "IN_PROGRESS"].includes(task.status) && !payment;
+  const canPay =
+    ["ASSIGNED", "IN_PROGRESS"].includes(task.status) &&
+    (!payment || ["PENDING", "FAILED"].includes(payment.status));
 
   return (
     <div className="page-container">
