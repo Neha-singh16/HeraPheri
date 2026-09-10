@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import api from "../api/client.jsx";
 import { useMode } from "../context/ModeContext.jsx";
 
-const { setMode, refreshExecutorCapability } = useMode();
 const emptyForm = {
   bio: "",
 };
 
 export default function ExecutorProfile() {
+  const { setMode, refreshExecutorCapability } = useMode();
+
   const [profile, setProfile] = useState(null);
 
   const [form, setForm] = useState(emptyForm);
