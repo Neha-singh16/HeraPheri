@@ -1,7 +1,11 @@
 import { useMode } from "../context/ModeContext.jsx";
 
 export default function ModeSwitcher() {
-  const { mode, setMode } = useMode();
+  const { mode, setMode, hasExecutorProfile, checkingExecutor } = useMode();
+
+  if (checkingExecutor) {
+    return null;
+  }
 
   return (
     <div className="mode-switcher">
@@ -12,12 +16,14 @@ export default function ModeSwitcher() {
         Request
       </button>
 
-      <button
-        className={mode === "EXECUTOR" ? "mode-button active" : "mode-button"}
-        onClick={() => setMode("EXECUTOR")}
-      >
-        Execute
-      </button>
+      {hasExecutorProfile && (
+        <button
+          className={mode === "EXECUTOR" ? "mode-button active" : "mode-button"}
+          onClick={() => setMode("EXECUTOR")}
+        >
+          Execute
+        </button>
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/client.jsx";
+import { useMode } from "../context/ModeContext.jsx";
 
+const { setMode, refreshExecutorCapability } = useMode();
 const emptyForm = {
   bio: "",
 };
@@ -76,6 +78,10 @@ export default function ExecutorProfile() {
       });
 
       setProfile(response.data.data);
+
+      await refreshExecutorCapability();
+
+      setMode("EXECUTOR");
 
       setMessage("Executor profile created successfully.");
     } catch (error) {

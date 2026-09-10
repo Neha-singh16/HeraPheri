@@ -22,6 +22,8 @@ import ExecutorProfile from "./pages/ExecutorProfile.jsx";
 import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
 import { ModeProvider } from "./context/ModeContext.jsx";
 
+import ModeRoute from "./components/ModeRoute.jsx";
+
 function App() {
   return (
     <AuthProvider>
@@ -42,25 +44,87 @@ function App() {
               </ProtectedRoute>
             }
           >
+            {/* Shared routes */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tasks" element={<MyTasks />} />
-            <Route path="/tasks/create" element={<CreateTask />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/reputation" element={<Reputation />} />
+
+            {/* REQUESTER ONLY */}
             <Route
-              path="/tasks/:taskId/execute"
-              element={<TaskExecution />}
-            />{" "}
-            <Route path="/tasks/:taskId/review" element={<TaskReview />} />
-            <Route path="/tasks/:taskId/matches" element={<TaskMatches />} />
+              path="/tasks"
+              element={
+                <ModeRoute requiredMode="REQUESTER">
+                  <MyTasks />
+                </ModeRoute>
+              }
+            />
+            <Route
+              path="/tasks/create"
+              element={
+                <ModeRoute requiredMode="REQUESTER">
+                  <CreateTask />
+                </ModeRoute>
+              }
+            />
+
+            <Route
+              path="/tasks/:taskId/review"
+              element={
+                <ModeRoute requiredMode="REQUESTER">
+                  <TaskReview />
+                </ModeRoute>
+              }
+            />
+            <Route
+              path="/tasks/:taskId/matches"
+              element={
+                <ModeRoute requiredMode="REQUESTER">
+                  <TaskMatches />
+                </ModeRoute>
+              }
+            />
+            {/* Task details can be shared */}
             <Route path="/tasks/:taskId" element={<TaskDetails />} />
-            <Route path="/find-tasks" element={<FindTasks />} />
-            <Route path="/executor-profile" element={<ExecutorProfile />} />
+            <Route
+              path="/tasks/:taskId/payment"
+              element={
+                <ModeRoute requiredMode="REQUESTER">
+                  <Payment />
+                </ModeRoute>
+              }
+            />
+            {/* EXECUTOR ONLY */}
+            <Route
+              path="/find-tasks"
+              element={
+                <ModeRoute requiredMode="EXECUTOR">
+                  <FindTasks />
+                </ModeRoute>
+              }
+            />
             <Route
               path="/executor/assignments"
-              element={<ExecutorAssignments />}
+              element={
+                <ModeRoute requiredMode="EXECUTOR">
+                  <ExecutorAssignments />
+                </ModeRoute>
+              }
             />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/tasks/:taskId/payment" element={<Payment />} />
-            <Route path="/reputation" element={<Reputation />} />
+            {/* /executor-profile needs to be accessible to a Requester who hasn't become an Executor yet. */}
+            <Route path="/executor-profile" element={<ExecutorProfile />} />
+
+            <Route
+              path="/tasks/:taskId/execute"
+              element={
+                <ModeRoute requiredMode="EXECUTOR">
+                  <TaskExecution />
+                </ModeRoute>
+              }
+            />
+
+            {/* Task details can be shared */}
+            <Route path="/tasks/:taskId" element={<TaskDetails />} />
+
             <Route
               path="/settings"
               element={<div>Settings coming soon.</div>}
