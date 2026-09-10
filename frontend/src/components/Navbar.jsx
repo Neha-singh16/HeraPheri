@@ -19,9 +19,17 @@ export default function Navbar() {
 
       {/* Right side */}
       <div className="navbar-actions">
-        <button className="notification-button" aria-label="Notifications">
+        {/* <button className="notification-button" aria-label="Notifications">
           🔔
-        </button>
+        </button> */}
+        <Link
+          to="/notifications"
+          className="notification-button"
+          aria-label="Notifications"
+        >
+          {" "}
+          🔔{" "}
+        </Link>
 
         <div className="user-menu">
           <button

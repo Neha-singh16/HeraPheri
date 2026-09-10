@@ -11,6 +11,7 @@ import PaymentWebhookEvent from "./paymentwebhookevent.js";
 import RefreshToken from "./refreshtoken.js";
 import Notification from "./notification.js";
 import Verification from "./verification.js";
+import Rating from "./rating.js";
 
 // User → Executor profile
 User.hasOne(ExecutorProfile, {
@@ -228,4 +229,5 @@ export {
   RefreshToken,
   Notification,
   Verification,
+  Rating,
 };

@@ -259,20 +259,25 @@ export default function TaskDetails() {
 
           {/* EXECUTOR: assigned task */}
 
-          {!isRequester && task.status === "ASSIGNED" && (
-            <div className="detail-section">
-              <h2>Ready to execute?</h2>
-
-              <p>Open the execution workspace to start the task.</p>
-
-              <Link
-                to={`/tasks/${task.id}/execute`}
-                className="primary-button"
-              >
-                Open Task
-              </Link>
-            </div>
-          )}
+          {isRequester &&
+            (task.status === "ASSIGNED" || task.status === "IN_PROGRESS") && (
+              <div className="detail-section">
+                {" "}
+                <h2> Fund this task </h2>{" "}
+                <p>
+                  {" "}
+                  Create the Razorpay payment and fund the assigned
+                  Executor.{" "}
+                </p>{" "}
+                <Link
+                  to={`/tasks/${task.id}/payment`}
+                  className="primary-button"
+                >
+                  {" "}
+                  Pay & Fund Task{" "}
+                </Link>{" "}
+              </div>
+            )}
 
           {/* EXECUTOR: task in progress */}
 
@@ -282,10 +287,7 @@ export default function TaskDetails() {
 
               <p>Continue your task and submit proof when you're finished.</p>
 
-              <Link
-                to={`/tasks/${task.id}/execute`}
-                className="primary-button"
-              >
+              <Link to={`/tasks/${task.id}/execute`} className="primary-button">
                 Continue Task
               </Link>
             </div>
@@ -299,10 +301,7 @@ export default function TaskDetails() {
 
               <p>The Executor has submitted proof for this task.</p>
 
-              <Link
-                to={`/tasks/${task.id}/review`}
-                className="primary-button"
-              >
+              <Link to={`/tasks/${task.id}/review`} className="primary-button">
                 Review Work
               </Link>
             </div>

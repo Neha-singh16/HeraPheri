@@ -1226,3 +1226,319 @@ button:disabled {
   margin-top: 30px;
   min-height: 220px;
 }
+
+/* ========================================= PAYMENT ========================================= */
+.payment-page {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.payment-card {
+  padding: 34px;
+  background: white;
+  border: 1px solid #e8ecef;
+  border-radius: 24px;
+}
+.payment-card h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  letter-spacing: -0.05em;
+}
+.payment-task-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 30px;
+}
+.payment-task-summary > div {
+  padding: 18px;
+  background: #f7f8f9;
+  border-radius: 14px;
+}
+.payment-task-summary span {
+  display: block;
+  margin-bottom: 7px;
+  color: #89929b;
+  font-size: 0.8rem;
+}
+.payment-task-summary strong {
+  display: block;
+  word-break: break-word;
+}
+.payment-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 22px;
+  padding: 16px;
+  background: #f5f7f8;
+  border-radius: 14px;
+}
+.payment-note > span {
+  font-size: 1.1rem;
+}
+.payment-note p {
+  margin: 0;
+  color: #69727d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.payment-button {
+  width: 100%;
+  margin-top: 24px;
+}
+.success-message {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: #edf8f1;
+  color: #26723e;
+  border-radius: 10px;
+} /* ========================================= NOTIFICATIONS ========================================= */
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 800px;
+}
+.notification-item {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e8ecef;
+  border-radius: 16px;
+  cursor: pointer;
+}
+.notification-item.unread {
+  background: #f9fafb;
+}
+.notification-item.read {
+  opacity: 0.75;
+}
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  background: #eef1f3;
+  border-radius: 12px;
+}
+.notification-content {
+  flex: 1;
+}
+.notification-content h3 {
+  margin: 0 0 6px;
+}
+.notification-content p {
+  margin: 0 0 8px;
+  color: #69727d;
+  line-height: 1.5;
+}
+.notification-content small {
+  color: #89929b;
+}
+.unread-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 7px;
+  flex-shrink: 0;
+  background: #17202a;
+  border-radius: 50%;
+}
+@media (max-width: 600px) {
+  .payment-card {
+    padding: 24px;
+  }
+  .payment-task-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================
+   RATINGS
+========================================= */
+
+.rating-form {
+  max-width: 650px;
+
+  margin-top: 28px;
+
+  padding-top: 26px;
+
+  border-top: 1px solid #edf0f2;
+}
+
+.rating-form h3 {
+  margin-top: 0;
+}
+
+.rating-stars {
+  display: flex;
+
+  gap: 6px;
+
+  margin: 18px 0 24px;
+}
+
+.star {
+  padding: 0;
+
+  background: transparent;
+
+  color: #c9ced3;
+
+  font-size: 2rem;
+
+  line-height: 1;
+
+  border: none;
+}
+
+.star:hover,
+.star.active {
+  color: #17202a;
+}
+
+.rating-form textarea {
+  display: block;
+
+  width: 100%;
+
+  margin-top: 8px;
+
+  padding: 13px 14px;
+
+  resize: vertical;
+
+  border: 1px solid #d8dde2;
+
+  border-radius: 12px;
+
+  outline: none;
+}
+
+.rating-form textarea:focus {
+  border-color: #17202a;
+
+  box-shadow: 0 0 0 3px rgba(23, 32, 42, 0.08);
+}
+
+/* =========================================
+   REPUTATION
+========================================= */
+
+.reputation-overview {
+  display: grid;
+
+  grid-template-columns:
+    280px
+    minmax(0, 1fr);
+
+  gap: 22px;
+
+  max-width: 850px;
+}
+
+.reputation-score {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 30px;
+
+  background: white;
+
+  border: 1px solid #e8ecef;
+
+  border-radius: 20px;
+
+  text-align: center;
+}
+
+.reputation-score strong {
+  font-size: 4rem;
+
+  line-height: 1;
+
+  letter-spacing: -0.06em;
+}
+
+.reputation-score span {
+  margin-top: 8px;
+
+  color: #69727d;
+}
+
+.rating-stars-static {
+  margin-top: 12px;
+
+  font-size: 1.35rem;
+
+  letter-spacing: 2px;
+}
+
+.rating-distribution {
+  display: flex;
+
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 26px;
+
+  background: white;
+
+  border: 1px solid #e8ecef;
+
+  border-radius: 20px;
+}
+
+.rating-row {
+  display: grid;
+
+  grid-template-columns:
+    25px
+    minmax(0, 1fr)
+    30px;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 8px 0;
+}
+
+.rating-bar {
+  height: 8px;
+
+  overflow: hidden;
+
+  background: #edf0f2;
+
+  border-radius: 999px;
+}
+
+.rating-bar div {
+  height: 100%;
+
+  background: #17202a;
+
+  border-radius: 999px;
+}
+
+.rating-row small {
+  text-align: right;
+
+  color: #69727d;
+}
+
+@media (max-width: 700px) {
+  .reputation-overview {
+    grid-template-columns: 1fr;
+  }
+}

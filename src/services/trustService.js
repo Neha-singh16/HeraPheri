@@ -1,137 +1,149 @@
-import {
-  Verification,
-  ExecutorProfile,
-} from "../models/index.js";
+import { Verification, ExecutorProfile, Rating } from "../models/index.js";
 
 const MAX_EXPERIENCE_TASKS = 50;
 
-// Recalculate the Executor's trust score
-// using system-controlled signals.
-export async function recalculateTrustScore(
-  userId
-) {
-  const profile =
-    await ExecutorProfile.findOne({
-      where: {
-        user_id: userId,
-      },
-    });
+export async function getTrustProfile(userId) {
+  const profile = await ExecutorProfile.findOne({
+    where: {
+      user_id: userId,
+    },
+  });
 
   if (!profile) {
-    throw new Error(
-      "Executor profile not found."
-    );
+    throw new Error("Executor profile not found.");
   }
-
-  const verification =
-    await Verification.findOne({
-      where: {
-        user_id: userId,
-        verification_type: "IDENTITY",
-      },
-    });
-
- // 1. Identity score
-  const verificationScore =
-    verification?.status === "VERIFIED"
-      ? 20
-      : 0;
-
-
-  // 2. Completion score
-  const completionRate =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(
-          profile.completion_rate
-        ) || 0
-      )
-    );
-
-  const completionScore =
-    completionRate * 0.30;
-
-
-    // 3. On-time score
-  const onTimeRate =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(
-          profile.on_time_rate
-        ) || 0
-      )
-    );
-
-  const onTimeScore =
-    onTimeRate * 0.25;
-
-
-   // 4. Experience score
-  const completedTasks =
-    Math.max(
-      0,
-      Number(
-        profile.completed_tasks
-      ) || 0
-    );
-
-  const experienceRatio =
-    Math.min(
-      completedTasks /
-        MAX_EXPERIENCE_TASKS,
-      1
-    );
-
-  const experienceScore =
-    experienceRatio * 25;
-
-
-  // Final score
-  const trustScore =
-    verificationScore +
-    completionScore +
-    onTimeScore +
-    experienceScore;
-
-  // Keep score inside 0-100.
-  const finalScore =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(
-          trustScore.toFixed(2)
-        )
-      )
-    );
-
-  // Trust score is controlled by the system.
-  await profile.update({
-    trust_score: finalScore,
-  });
 
   return profile;
 }
 
-export async function getTrustProfile(
-  userId
-) {
-  const profile =
-    await ExecutorProfile.findOne({
-      where: {
-        user_id: userId,
-      },
-    });
+// Calculate reputation from actual
+// ratings received by this user.
+async function getRatingScore(userId) {
+  const ratings = await Rating.findAll({
+    where: {
+      reviewed_user_id: userId,
+    },
 
-  if (!profile) {
-    throw new Error(
-      "Executor profile not found."
-    );
+    attributes: ["rating"],
+  });
+
+  if (ratings.length === 0) {
+    return {
+      averageRating: 0,
+      ratingCount: 0,
+      score: 0,
+    };
   }
 
-  return profile;
+  const total = ratings.reduce((sum, item) => sum + Number(item.rating), 0);
+
+  const averageRating = total / ratings.length;
+
+  /*
+    Don't give a brand-new user
+    the full reputation score from
+    a single rating.
+
+    Reputation confidence grows
+    with more completed ratings.
+  */
+  const confidence = Math.min(ratings.length / 10, 1);
+
+  const normalizedRating = (averageRating / 5) * 25;
+
+  const score = normalizedRating * confidence;
+
+  return {
+    averageRating,
+    ratingCount: ratings.length,
+    score,
+  };
+}
+
+// Recalculate an Executor's trust score.
+export async function recalculateTrustScore(userId) {
+  const profile = await ExecutorProfile.findOne({
+    where: {
+      user_id: userId,
+    },
+  });
+
+  if (!profile) {
+    throw new Error("Executor profile not found.");
+  }
+
+  const verification = await Verification.findOne({
+    where: {
+      user_id: userId,
+
+      verification_type: "IDENTITY",
+    },
+  });
+
+  // -------------------------------------------
+  // 1. Identity
+  // -------------------------------------------
+
+  const verificationScore = verification?.status === "VERIFIED" ? 15 : 0;
+
+  // -------------------------------------------
+  // 2. Completion
+  // -------------------------------------------
+
+  const completionRate = Math.max(
+    0,
+    Math.min(100, Number(profile.completion_rate) || 0),
+  );
+
+  const completionScore = completionRate * 0.25;
+
+  // -------------------------------------------
+  // 3. On-time
+  // -------------------------------------------
+
+  const onTimeRate = Math.max(
+    0,
+    Math.min(100, Number(profile.on_time_rate) || 0),
+  );
+
+  const onTimeScore = onTimeRate * 0.2;
+
+  // -------------------------------------------
+  // 4. Experience
+  // -------------------------------------------
+
+  const completedTasks = Math.max(0, Number(profile.completed_tasks) || 0);
+
+  const experienceRatio = Math.min(completedTasks / MAX_EXPERIENCE_TASKS, 1);
+
+  const experienceScore = experienceRatio * 15;
+
+  // -------------------------------------------
+  // 5. Reputation
+  // -------------------------------------------
+
+  const reputation = await getRatingScore(userId);
+
+  // -------------------------------------------
+  // Final score
+  // -------------------------------------------
+
+  const trustScore =
+    verificationScore +
+    completionScore +
+    onTimeScore +
+    experienceScore +
+    reputation.score;
+
+  const finalScore = Math.max(0, Math.min(100, Number(trustScore.toFixed(2))));
+
+  await profile.update({
+    trust_score: finalScore,
+  });
+
+  return {
+    profile,
+    reputation,
+    trustScore: finalScore,
+  };
 }

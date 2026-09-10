@@ -15,6 +15,9 @@ import TaskMatches from "./pages/TaskMatches.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import TaskExecution from "./pages/TaskExecution.jsx";
 import TaskReview from "./pages/TaskReview.jsx";
+import Payment from "./pages/Payment.jsx";
+import Notifications from "./pages/Notifications.jsx";
+import Reputation from "./pages/Reputation.jsx";
 
 function App() {
   return (
@@ -50,7 +53,9 @@ function App() {
             path="/executor-profile"
             element={<div>Executor Profile coming soon.</div>}
           />
-          <Route path="/payments" element={<div>Payments coming soon.</div>} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/tasks/:taskId/payment" element={<Payment />} />
+          <Route path="/reputation" element={<Reputation />} />
           <Route path="/settings" element={<div>Settings coming soon.</div>} />
           <Route path="/profile" element={<div>Profile coming soon.</div>} />
         </Route>

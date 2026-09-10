@@ -26,6 +26,11 @@ const navigation = [
   },
 
   {
+  label: "Reputation",
+  path: "/reputation",
+  icon: "★",
+},
+  {
     label: "Payments",
     path: "/payments",
     icon: "₹",

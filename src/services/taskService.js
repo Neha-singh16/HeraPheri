@@ -4,6 +4,7 @@ import sequelize from "../config/database.js";
 import { Task } from "../models/index.js";
 
 import { createTaskEvent } from "./taskEventService.js";
+import { scheduleTaskExpiration } from "./taskJobService.js";
 
 const VALID_CATEGORIES = ["GO", "GET", "CHECK", "DIGITAL"];
 const VALID_MODES = ["PHYSICAL", "DIGITAL", "HYBRID"];
@@ -117,8 +118,25 @@ export async function createTask({
     });
 
     await transaction.commit();
+    try {
+      await scheduleTaskExpiration({
+        taskId: task.id,
+        deadlineAt: task.deadline_at,
+      });
+    } catch (jobError) {
+      /*
+    The task is already committed.
+
+    Queue failure should be logged and handled
+    separately rather than pretending the task
+    creation itself failed.
+  */
+      console.error("Failed to schedule task expiration:", jobError);
+    }
 
     return task;
+
+    
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -279,12 +297,8 @@ export async function updateTask({ taskId, requesterId, updates }) {
 }
 
 // Cancel an open task.
-export async function cancelTask({
-  taskId,
-  requesterId,
-}) {
-  const transaction =
-    await sequelize.transaction();
+export async function cancelTask({ taskId, requesterId }) {
+  const transaction = await sequelize.transaction();
 
   try {
     const task = await Task.findOne({
@@ -297,17 +311,11 @@ export async function cancelTask({
     });
 
     if (!task) {
-      throw new Error(
-        "Task not found or access denied."
-      );
+      throw new Error("Task not found or access denied.");
     }
 
-    if (
-      !["OPEN"].includes(task.status)
-    ) {
-      throw new Error(
-        "Only open tasks can be cancelled in V1."
-      );
+    if (!["OPEN"].includes(task.status)) {
+      throw new Error("Only open tasks can be cancelled in V1.");
     }
 
     await task.update(
@@ -316,7 +324,7 @@ export async function cancelTask({
       },
       {
         transaction,
-      }
+      },
     );
 
     await createTaskEvent({
