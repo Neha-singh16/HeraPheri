@@ -1,24 +1,51 @@
 import { useEffect, useState } from "react";
-
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import api from "../api/client.jsx";
-
 import { loadRazorpayScript } from "../utils/loadRazorpay.js";
+
+function formatMoney(amount) {
+  if (amount === null || amount === undefined) {
+    return "₹0.00";
+  }
+
+  return `₹${Number(amount).toFixed(2)}`;
+}
+
+function getPaymentStatusLabel(status) {
+  switch (status) {
+    case "PENDING":
+      return "Payment pending";
+
+    case "HELD":
+      return "Payment secured";
+
+    case "RELEASED":
+      return "Payment released";
+
+    case "FAILED":
+      return "Payment failed";
+
+    case "DISPUTED":
+      return "Payment disputed";
+
+    case "REFUNDED":
+      return "Payment refunded";
+
+    default:
+      return "Payment not created";
+  }
+}
 
 export default function Payment() {
   const { taskId } = useParams();
 
-  const navigate = useNavigate();
-
   const [task, setTask] = useState(null);
 
   const [loading, setLoading] = useState(true);
-
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const [error, setError] = useState("");
-
   const [success, setSuccess] = useState("");
 
   async function fetchTask() {
@@ -30,7 +57,9 @@ export default function Payment() {
 
       setTask(response.data.data);
     } catch (error) {
-      setError(error.response?.data?.message || "Unable to load task.");
+      setError(
+        error.response?.data?.message || "Unable to load payment details.",
+      );
     } finally {
       setLoading(false);
     }
@@ -52,15 +81,12 @@ export default function Payment() {
         throw new Error("Razorpay checkout could not be loaded.");
       }
 
-      // Create our internal payment + Razorpay order.
       const response = await api.post(`/payments/tasks/${taskId}/order`);
 
       const data = response.data.data;
 
       const payment = data.payment;
-
       const razorpayOrder = data.razorpayOrder;
-
       const keyId = data.keyId;
 
       if (!payment || !razorpayOrder || !keyId) {
@@ -69,9 +95,7 @@ export default function Payment() {
 
       const options = {
         key: keyId,
-
         amount: razorpayOrder.amount,
-
         currency: razorpayOrder.currency,
 
         name: "HEREPHERI",
@@ -85,13 +109,6 @@ export default function Payment() {
             setPaymentLoading(true);
             setError("");
 
-            /*
-                Browser receives Razorpay result.
-
-                We still send these values to our
-                backend, where the Razorpay signature
-                is verified server-side.
-              */
             await api.post(`/payments/${payment.id}/verify`, {
               razorpayOrderId: razorpayResponse.razorpay_order_id,
 
@@ -101,6 +118,12 @@ export default function Payment() {
             });
 
             setSuccess("Payment completed successfully.");
+
+            /*
+              Reload task so that the UI immediately
+              sees payment.status = HELD.
+            */
+            await fetchTask();
           } catch (error) {
             setError(
               error.response?.data?.message || "Payment verification failed.",
@@ -170,7 +193,14 @@ export default function Payment() {
     );
   }
 
-  const canPay = task.status === "ASSIGNED" || task.status === "IN_PROGRESS";
+  const payment = task.payment;
+
+  /*
+    Payment can only be initiated when:
+    - task is assigned/in progress
+    - payment doesn't exist yet
+  */
+  const canPay = ["ASSIGNED", "IN_PROGRESS"].includes(task.status) && !payment;
 
   return (
     <div className="page-container">
@@ -182,11 +212,16 @@ export default function Payment() {
         <div className="payment-card">
           <p className="eyebrow">SECURE PAYMENT</p>
 
-          <h1>Fund this task</h1>
+          <h1>
+            {payment ? getPaymentStatusLabel(payment.status) : "Fund this task"}
+          </h1>
 
           <p className="page-description">
-            Your payment is held by HEREPHERI until the task reaches the
-            appropriate completion stage.
+            {payment?.status === "HELD"
+              ? "Your payment has been secured. The Executor can now start working on the task."
+              : payment?.status === "RELEASED"
+                ? "The task was completed and the Executor's earnings have been released."
+                : "Your payment is held by HEREPHERI until the task reaches the appropriate completion stage."}
           </p>
 
           <div className="payment-task-summary">
@@ -199,36 +234,77 @@ export default function Payment() {
             <div>
               <span>Task reward</span>
 
-              <strong>₹{task.reward_amount}</strong>
+              <strong>{formatMoney(task.reward_amount)}</strong>
             </div>
 
             <div>
               <span>Platform fee</span>
 
-              <strong>10%</strong>
+              <strong>
+                {payment ? formatMoney(payment.platform_fee) : "10%"}
+              </strong>
             </div>
 
             <div>
-              <span>Status</span>
+              <span>Total paid</span>
+
+              <strong>
+                {payment
+                  ? formatMoney(payment.gross_amount)
+                  : formatMoney(Number(task.reward_amount) * 1.1)}
+              </strong>
+            </div>
+
+            <div>
+              <span>Task status</span>
 
               <strong>{task.status}</strong>
             </div>
+
+            <div>
+              <span>Payment status</span>
+
+              <strong>{payment ? payment.status : "NOT FUNDED"}</strong>
+            </div>
           </div>
 
-          <div className="payment-note">
-            <span>✓</span>
+          {payment?.status === "HELD" && (
+            <div className="payment-note">
+              <span>✓</span>
 
-            <p>
-              The final amount is calculated by the backend. Do not modify
-              payment amounts in the frontend.
-            </p>
-          </div>
+              <p>
+                Your payment is secured. The Executor can now begin the task.
+              </p>
+            </div>
+          )}
+
+          {payment?.status === "RELEASED" && (
+            <div className="payment-note">
+              <span>✓</span>
+
+              <p>
+                {formatMoney(payment.executor_amount)} has been released to the
+                Executor.
+              </p>
+            </div>
+          )}
+
+          {!payment && (
+            <div className="payment-note">
+              <span>✓</span>
+
+              <p>
+                The final amount is calculated by the backend. Do not modify
+                payment amounts in the frontend.
+              </p>
+            </div>
+          )}
 
           {error && <div className="error-message">{error}</div>}
 
           {success && <div className="success-message">{success}</div>}
 
-          {canPay ? (
+          {canPay && (
             <button
               className="primary-button payment-button"
               onClick={handlePayment}
@@ -236,13 +312,27 @@ export default function Payment() {
             >
               {paymentLoading ? "Processing..." : "Pay & Fund Task"}
             </button>
-          ) : (
-            <div className="empty-state">
-              <h3>Payment unavailable</h3>
+          )}
 
-              <p>
-                Payment can only be created after the task has been assigned.
-              </p>
+          {payment?.status === "HELD" && (
+            <div className="success-message">
+              ✓ Already funded — no further payment is required.
+            </div>
+          )}
+
+          {payment?.status === "RELEASED" && (
+            <Link
+              to={`/tasks/${taskId}`}
+              className="primary-button payment-button"
+            >
+              View Completed Task
+            </Link>
+          )}
+
+          {payment?.status === "FAILED" && (
+            <div className="error-message">
+              This payment failed. Please contact support before creating
+              another payment.
             </div>
           )}
         </div>

@@ -1,8 +1,6 @@
 import sequelize from "../config/database.js";
 import razorpay from "../config/razorpay.js";
-import {
-  verifyPaymentSignature,
-} from "../utils/razorpay.js";
+import { verifyPaymentSignature } from "../utils/razorpay.js";
 
 import { Task, TaskAssignment, Payment, LedgerEntry } from "../models/index.js";
 
@@ -168,9 +166,9 @@ export async function verifyPayment({
     );
 
     await transaction.commit();
-// HELD?
-// This is our platform state, not necessarily Razorpay's literal payment state.
-// “The customer paid, but the Executor hasn't earned/retrieved the money yet.”
+    // HELD?
+    // This is our platform state, not necessarily Razorpay's literal payment state.
+    // “The customer paid, but the Executor hasn't earned/retrieved the money yet.”
     return payment;
   } catch (error) {
     await transaction.rollback();
@@ -178,3 +176,97 @@ export async function verifyPayment({
   }
 }
 
+export async function releasePaymentForTask({ taskId, transaction }) {
+  const payment = await Payment.findOne({
+    where: {
+      task_id: taskId,
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+
+  if (!payment) {
+    throw new Error("Payment not found for this task.");
+  }
+
+  /*
+    Idempotency:
+    if the task was already approved and payment
+    was already released, do not release it again.
+  */
+  if (payment.status === "RELEASED") {
+    return payment;
+  }
+
+  /*
+    Only HELD funds can be released to the Executor.
+  */
+  if (payment.status !== "HELD") {
+    throw new Error(
+      "Payment must be successfully funded before it can be released.",
+    );
+  }
+
+  const releasedAt = new Date();
+
+  await payment.update(
+    {
+      status: "RELEASED",
+      released_at: releasedAt,
+    },
+    {
+      transaction,
+    },
+  );
+
+  /*
+    Executor earnings are credited to the internal ledger.
+
+    IMPORTANT:
+    This is an internal wallet/ledger credit.
+    It is NOT yet a bank payout.
+  */
+  await LedgerEntry.create(
+    {
+      user_id: payment.executor_id,
+      task_id: payment.task_id,
+      payment_id: payment.id,
+
+      entry_type: "EXECUTOR_EARNING",
+
+      amount: payment.executor_amount,
+
+      direction: "CREDIT",
+
+      reference: `TASK_RELEASE:${taskId}`,
+    },
+    {
+      transaction,
+    },
+  );
+
+  /*
+    Record the platform fee separately.
+    The platform does not need a user_id here.
+  */
+  await LedgerEntry.create(
+    {
+      user_id: null,
+      task_id: payment.task_id,
+      payment_id: payment.id,
+
+      entry_type: "PLATFORM_FEE",
+
+      amount: payment.platform_fee,
+
+      direction: "CREDIT",
+
+      reference: `PLATFORM_FEE:${taskId}`,
+    },
+    {
+      transaction,
+    },
+  );
+
+  return payment;
+}

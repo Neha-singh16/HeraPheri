@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../api/client.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
+import { useMode } from "../context/ModeContext.jsx";
 
 function formatStatus(status) {
   if (!status) {
@@ -32,6 +33,7 @@ export default function TaskDetails() {
   const { taskId } = useParams();
 
   const { user } = useAuth();
+  const { isExecutor } = useMode();
 
   const navigate = useNavigate();
 
@@ -259,7 +261,7 @@ export default function TaskDetails() {
 
           {/* EXECUTOR: assigned task */}
 
-          {isRequester &&
+          {/* {isRequester &&
             (task.status === "ASSIGNED" || task.status === "IN_PROGRESS") && (
               <div className="detail-section">
                 {" "}
@@ -277,7 +279,148 @@ export default function TaskDetails() {
                   Pay & Fund Task{" "}
                 </Link>{" "}
               </div>
+            )} */}
+
+          {/* -------------------------------------------
+    REQUESTER: fund assigned task
+-------------------------------------------- */}
+
+          {isRequester &&
+            (task.status === "ASSIGNED" || task.status === "IN_PROGRESS") && (
+              <div className="detail-section">
+                <h2>
+                  {task.payment?.status === "HELD"
+                    ? "Task funded"
+                    : task.payment?.status === "RELEASED"
+                      ? "Payment released"
+                      : "Fund this task"}
+                </h2>
+
+                <p>
+                  {task.payment?.status === "HELD"
+                    ? "Your payment is secured. The Executor can now work on this task."
+                    : task.payment?.status === "RELEASED"
+                      ? "The Executor has received credit for this completed task."
+                      : "The Executor has accepted this task. Fund it so they can start working."}
+                </p>
+
+                {task.payment?.status === "HELD" ? (
+                  <div className="success-message">
+                    ✓ Task funded successfully
+                  </div>
+                ) : task.payment?.status === "RELEASED" ? (
+                  <div className="success-message">✓ Payment released</div>
+                ) : (
+                  <Link
+                    to={`/tasks/${task.id}/payment`}
+                    className="primary-button"
+                  >
+                    Pay & Fund Task
+                  </Link>
+                )}
+              </div>
             )}
+
+          {/* -------------------------------------------
+    EXECUTOR: assigned task
+-------------------------------------------- */}
+
+          {isExecutor && task.status === "ASSIGNED" && (
+            <div className="detail-section">
+              <h2>Task assigned</h2>
+
+              {task.payment?.status === "HELD" ? (
+                <>
+                  <p>
+                    The requester has funded this task. You can now begin the
+                    work.
+                  </p>
+
+                  <Link
+                    to={`/tasks/${task.id}/execute`}
+                    className="primary-button"
+                  >
+                    Start Task
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p>
+                    This task has been assigned to you, but the requester has
+                    not funded it yet.
+                  </p>
+
+                  <div className="payment-note">
+                    <span>⏳</span>
+
+                    <p>
+                      You will be able to start once the requester successfully
+                      funds the task.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* -------------------------------------------
+    EXECUTOR: task in progress
+-------------------------------------------- */}
+
+          {isExecutor && task.status === "IN_PROGRESS" && (
+            <div className="detail-section">
+              <h2>Task in progress</h2>
+
+              <p>Continue your task and submit proof when you're finished.</p>
+
+              <Link to={`/tasks/${task.id}/execute`} className="primary-button">
+                Continue Task
+              </Link>
+            </div>
+          )}
+
+          {/* -------------------------------------------
+    EXECUTOR: waiting for requester approval
+-------------------------------------------- */}
+
+          {isExecutor && task.status === "PENDING_APPROVAL" && (
+            <div className="detail-section">
+              <h2>Work submitted</h2>
+
+              <p>
+                Your proof has been submitted. Wait for the requester to review
+                and approve it.
+              </p>
+
+              <div className="payment-note">
+                <span>⏳</span>
+
+                <p>
+                  Payment will be released after the requester approves the
+                  completed work.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* -------------------------------------------
+    EXECUTOR: completed
+-------------------------------------------- */}
+
+          {isExecutor && task.status === "COMPLETED" && (
+            <div className="detail-section">
+              <h2>Task completed ✓</h2>
+
+              <p>The requester approved your work.</p>
+
+              {task.payment?.status === "RELEASED" && (
+                <div className="success-message">
+                  ✓ {`₹${Number(task.payment.executor_amount).toFixed(2)}`}{" "}
+                  released to your earnings.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* EXECUTOR: task in progress */}
 

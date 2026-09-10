@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 
-import { Task } from "../models/index.js";
+import { Task, Payment } from "../models/index.js";
 
 import { createTaskEvent } from "./taskEventService.js";
 import { scheduleTaskExpiration } from "./taskJobService.js";
@@ -135,8 +135,6 @@ export async function createTask({
     }
 
     return task;
-
-    
   } catch (error) {
     await transaction.rollback();
     throw error;
@@ -186,14 +184,35 @@ export async function getMyTasks({
 
 // Get one task.
 export async function getTaskById({ taskId, userId }) {
-  const task = await Task.findByPk(taskId);
+  const task = await Task.findByPk(taskId, {
+    include: [
+      {
+        model: Payment,
+        as: "payment",
+
+        /*
+          Only expose the fields the UI actually needs.
+          Never expose provider secrets or unnecessary
+          payment-provider internals.
+        */
+        attributes: [
+          "id",
+          "gross_amount",
+          "platform_fee",
+          "executor_amount",
+          "currency",
+          "status",
+          "paid_at",
+          "released_at",
+        ],
+      },
+    ],
+  });
 
   if (!task) {
     throw new Error("Task not found.");
   }
 
-  // For V1, task details are visible to authenticated users.
-  // Sensitive information will be restricted later.
   return task;
 }
 

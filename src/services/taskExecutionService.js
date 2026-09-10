@@ -1,5 +1,5 @@
 import sequelize from "../config/database.js";
-import { Task, TaskAssignment, TaskProof } from "../models/index.js";
+import { Task, TaskAssignment, TaskProof, Payment } from "../models/index.js";
 import { createTaskEvent } from "./taskEventService.js";
 
 export async function startTask(taskId, executorId) {
@@ -30,6 +30,24 @@ export async function startTask(taskId, executorId) {
     });
     if (!assignment) {
       throw new Error("You are not the assigned Executor for this task.");
+    }
+
+    const payment = await Payment.findOne({
+      where: {
+        task_id: taskId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!payment) {
+      throw new Error("Requester has not funded this task yet.");
+    }
+
+    if (payment.status !== "HELD") {
+      throw new Error(
+        "Requester must fund the task before execution can begin.",
+      );
     }
 
     await assignment.update(
@@ -64,7 +82,6 @@ export async function startTask(taskId, executorId) {
     throw error;
   }
 }
-
 
 export async function submitProof({
   taskId,

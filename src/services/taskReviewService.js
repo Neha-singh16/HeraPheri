@@ -2,7 +2,7 @@ import sequelize from "../config/database.js";
 import Task from "../models/task.js";
 import { Dispute, TaskAssignment } from "../models/index.js";
 import { Op } from "sequelize";
-
+import { releasePaymentForTask } from "./paymentService.js";
 import { createTaskEvent } from "./taskEventService.js";
 
 export async function approveTask(taskId, requesterId) {
@@ -40,6 +40,10 @@ export async function approveTask(taskId, requesterId) {
     if (!assignment) {
       throw new Error("Active assignment not found.");
     }
+    const releasedPayment = await releasePaymentForTask({
+      taskId,
+      transaction,
+    });
 
     // Move task into its final successful state.
     await task.update(
@@ -77,8 +81,6 @@ export async function approveTask(taskId, requesterId) {
   }
 }
 
-
-
 export async function createDispute({ taskId, userId, reason, description }) {
   const transaction = await sequelize.transaction();
   try {
@@ -113,15 +115,15 @@ export async function createDispute({ taskId, userId, reason, description }) {
       throw new Error("This task cannot be disputed at its current stage.");
     }
 
-  const existingDispute = await Dispute.findOne({
-  where: {
-    task_id: taskId,
-    status: {
-      [Op.in]: ["OPEN", "UNDER_REVIEW"],
-    },
-  },
-  transaction,
-});
+    const existingDispute = await Dispute.findOne({
+      where: {
+        task_id: taskId,
+        status: {
+          [Op.in]: ["OPEN", "UNDER_REVIEW"],
+        },
+      },
+      transaction,
+    });
 
     if (existingDispute) {
       throw new Error("An active dispute already exists.");

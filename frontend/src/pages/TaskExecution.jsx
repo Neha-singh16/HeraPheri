@@ -156,19 +156,56 @@ export default function TaskExecution() {
           </div>{" "}
           {task.status === "ASSIGNED" && (
             <div className="detail-section">
-              {" "}
-              <h2> Start execution </h2>{" "}
-              <p> Start the task when you are ready to begin. </p>{" "}
-              <button
-                className="primary-button"
-                onClick={startTask}
-                disabled={actionLoading}
-              >
-                {" "}
-                {actionLoading ? "Starting..." : "Start Task"}{" "}
-              </button>{" "}
+              <h2>
+                {task.payment?.status === "HELD"
+                  ? "Ready to start"
+                  : "Waiting for payment"}
+              </h2>
+
+              {task.payment?.status === "HELD" ? (
+                <>
+                  <p>
+                    The requester has funded this task. You can now begin
+                    working.
+                  </p>
+
+                  <div className="payment-note">
+                    <span>✓</span>
+
+                    <p>
+                      Your reward of ₹
+                      {Number(task.payment.executor_amount).toFixed(2)} will be
+                      credited after the requester approves your completed work.
+                    </p>
+                  </div>
+
+                  <button
+                    className="primary-button"
+                    onClick={startTask}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Starting..." : "Start Task"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>
+                    The requester has assigned the task, but payment has not
+                    been secured yet.
+                  </p>
+
+                  <div className="payment-note">
+                    <span>⏳</span>
+
+                    <p>
+                      You cannot start this task until the requester
+                      successfully funds it.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-          )}{" "}
+          )}
           {task.status === "IN_PROGRESS" && (
             <div className="detail-section">
               {" "}
