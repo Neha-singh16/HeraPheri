@@ -13,6 +13,22 @@ export async function scheduleTaskExpiration({ taskId, deadlineAt }) {
     throw new Error("Task deadline must be in the future.");
   }
 
+  const warningDelay = Math.max(
+    deadline.getTime() - Date.now() - 60 * 60 * 1000,
+    0,
+  );
+
+  await taskQueue.add(
+    "task-deadline-warning",
+    {
+      taskId,
+    },
+    {
+      delay: warningDelay,
+      jobId: `task-deadline-warning-${taskId}`,
+    },
+  );
+
   return taskQueue.add(
     "expire-task",
     {

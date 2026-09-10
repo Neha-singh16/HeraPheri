@@ -1,7 +1,7 @@
 import sequelize from "../config/database.js";
 import razorpay from "../config/razorpay.js";
 import {
-  verifyWebhookSignature,
+  verifyPaymentSignature,
 } from "../utils/razorpay.js";
 
 import { Task, TaskAssignment, Payment, LedgerEntry } from "../models/index.js";
@@ -121,7 +121,7 @@ export async function verifyPayment({
       return payment;
     }
 
-    const valid =  verifyWebhookSignature({
+    const valid = verifyPaymentSignature({
       orderId: razorpayOrderId,
       paymentId: razorpayPaymentId,
       signature: razorpaySignature,

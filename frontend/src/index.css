@@ -1356,7 +1356,6 @@ button:disabled {
   }
 }
 
-
 /* =========================================
    RATINGS
 ========================================= */
@@ -1541,4 +1540,382 @@ button:disabled {
   .reputation-overview {
     grid-template-columns: 1fr;
   }
+}
+
+/* ========================================= EXECUTOR PROFILE ========================================= */
+.profile-card {
+  max-width: 900px;
+  margin-bottom: 22px;
+  padding: 28px;
+  background: white;
+  border: 1px solid #e8ecef;
+  border-radius: 20px;
+}
+.profile-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.profile-card-header h2 {
+  margin: 0 0 8px;
+}
+.profile-card-header p {
+  margin: 0;
+  color: #69727d;
+  line-height: 1.6;
+}
+.availability-badge {
+  display: inline-flex;
+  padding: 7px 11px;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.availability-badge.available {
+  background: #edf8f1;
+  color: #23713d;
+}
+.availability-badge.unavailable {
+  background: #f1f2f3;
+  color: #69727d;
+}
+.profile-form {
+  max-width: 700px;
+}
+.profile-form textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 14px;
+  resize: vertical;
+  border: 1px solid #d8dde2;
+  border-radius: 12px;
+  outline: none;
+}
+.profile-form textarea:focus {
+  border-color: #17202a;
+  box-shadow: 0 0 0 3px rgba(23, 32, 42, 0.08);
+}
+.profile-bio {
+  padding: 18px;
+  background: #f7f8f9;
+  border-radius: 14px;
+}
+.profile-bio small,
+.location-status small {
+  display: block;
+  margin-bottom: 7px;
+  color: #89929b;
+}
+.profile-bio p {
+  margin: 0;
+  color: #69727d;
+  line-height: 1.7;
+}
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.profile-actions button {
+  width: auto;
+}
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 900px;
+  margin-bottom: 22px;
+}
+.profile-stat {
+  padding: 22px;
+  background: white;
+  border: 1px solid #e8ecef;
+  border-radius: 18px;
+}
+.profile-stat span {
+  display: block;
+  color: #69727d;
+  font-size: 0.82rem;
+}
+.profile-stat strong {
+  display: block;
+  margin-top: 9px;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+.location-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px;
+  background: #f7f8f9;
+  border-radius: 14px;
+}
+.location-status strong {
+  display: block;
+}
+.location-status button {
+  width: auto;
+}
+@media (max-width: 800px) {
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .profile-card-header {
+    flex-direction: column;
+  }
+}
+@media (max-width: 520px) {
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+  .profile-actions {
+    flex-direction: column;
+  }
+  .profile-actions button {
+    width: 100%;
+  }
+  .location-status {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .location-status button {
+    width: 100%;
+  }
+}
+
+
+
+/* =========================================
+   ROLE DASHBOARDS
+========================================= */
+
+.mode-dashboard {
+  max-width: 1200px;
+
+  margin: 0 auto;
+}
+
+
+.dashboard-welcome {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 28px;
+
+  margin-bottom: 34px;
+}
+
+
+.dashboard-welcome h1 {
+  margin:
+    8px 0 10px;
+
+  max-width: 700px;
+
+  font-size:
+    clamp(
+      2.1rem,
+      4vw,
+      4rem
+    );
+
+  line-height: 1;
+
+  letter-spacing:
+    -0.055em;
+}
+
+
+.dashboard-welcome p:not(.eyebrow) {
+  margin: 0;
+
+  color: #69727d;
+
+  line-height: 1.6;
+}
+
+
+.text-link {
+  color: #17202a;
+
+  text-decoration: none;
+
+  font-weight: 700;
+}
+
+
+/* =========================================
+   MODE SWITCHER
+========================================= */
+
+.mode-switcher {
+  display: flex;
+
+  padding: 4px;
+
+  background: #eef1f3;
+
+  border-radius: 10px;
+}
+
+
+.mode-button {
+  padding:
+    7px 13px;
+
+  background: transparent;
+
+  color: #69727d;
+
+  border-radius: 7px;
+
+  font-size: 0.78rem;
+}
+
+
+.mode-button.active {
+  background: white;
+
+  color: #17202a;
+
+  box-shadow:
+    0 2px 6px
+    rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================================
+   EXECUTOR
+========================================= */
+
+.executor-setup-card {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 24px;
+
+  margin-bottom: 24px;
+
+  padding: 28px;
+
+  background: white;
+
+  border:
+    1px solid #e8ecef;
+
+  border-radius: 20px;
+}
+
+
+.executor-setup-card h2 {
+  margin:
+    6px 0 8px;
+}
+
+
+.executor-setup-card p:not(.eyebrow) {
+  max-width: 650px;
+
+  margin: 0;
+
+  color: #69727d;
+
+  line-height: 1.6;
+}
+
+
+.executor-status-card {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr)
+    auto;
+
+  align-items: center;
+
+  gap: 16px;
+
+  margin-bottom: 24px;
+
+  padding: 22px;
+
+  background: white;
+
+  border:
+    1px solid #e8ecef;
+
+  border-radius: 20px;
+}
+
+
+.executor-status-card > div {
+  padding:
+    0 18px;
+
+  border-right:
+    1px solid #edf0f2;
+}
+
+
+.executor-status-card span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #89929b;
+
+  font-size: 0.8rem;
+}
+
+
+.executor-status-card strong {
+  font-size: 1.3rem;
+}
+
+
+@media (max-width: 850px) {
+
+  .dashboard-welcome {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .executor-status-card {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .mode-switcher {
+    display: none;
+  }
+
+  .executor-setup-card {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .executor-status-card {
+    grid-template-columns: 1fr;
+  }
+
+  .executor-status-card > div {
+    border-right: none;
+  }
+
 }

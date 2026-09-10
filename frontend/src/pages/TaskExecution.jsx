@@ -20,7 +20,7 @@ export default function TaskExecution() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [proofForm, setProofForm] = useState({
-    proofType: "TEXT",
+    proofType: "TEXT_RESULT",
     textContent: "",
     storageKey: "",
   });
@@ -71,7 +71,11 @@ export default function TaskExecution() {
         metadata: { submittedFrom: "web" },
       });
       await fetchTask();
-      setProofForm({ proofType: "TEXT", textContent: "", storageKey: "" });
+      setProofForm({
+        proofType: "TEXT_RESULT",
+        textContent: "",
+        storageKey: "",
+      });
     } catch (error) {
       setError(error.response?.data?.message || "Unable to submit proof.");
     } finally {
@@ -181,9 +185,13 @@ export default function TaskExecution() {
                     onChange={handleProofChange}
                   >
                     {" "}
-                    <option value="TEXT"> Text </option>{" "}
+                    <option value="TEXT_RESULT"> Text result </option>{" "}
                     <option value="PHOTO"> Photo </option>{" "}
-                    <option value="SCREENSHOT"> Screenshot </option>{" "}
+                    <option value="VIDEO"> Video </option>{" "}
+                    <option value="RECEIPT"> Receipt </option>{" "}
+                    <option value="DOCUMENT"> Document </option>{" "}
+                    <option value="OTP"> OTP </option>{" "}
+                    <option value="FILE"> File </option>{" "}
                   </select>{" "}
                 </label>{" "}
                 <label>

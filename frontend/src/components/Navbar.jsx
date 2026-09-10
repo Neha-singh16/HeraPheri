@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext.jsx";
-
+import ModeSwitcher
+  from "./ModeSwitcher.jsx";
 export default function Navbar() {
   const { user, logout } = useAuth();
 
@@ -22,6 +23,7 @@ export default function Navbar() {
         {/* <button className="notification-button" aria-label="Notifications">
           🔔
         </button> */}
+        <ModeSwitcher />
         <Link
           to="/notifications"
           className="notification-button"

@@ -1,4 +1,4 @@
-import { acceptTask } from "../services/taskAssignmentService.js";
+import { acceptTask,getMyAssignedTasks, } from "../services/taskAssignmentService.js";
 
 export async function acceptTaskController(req, res) {
   try {
@@ -18,3 +18,34 @@ export async function acceptTaskController(req, res) {
     });
   }
 }
+
+
+export async function getMyAssignedTasksController(
+  req,
+  res
+) {
+  try {
+    const assignments =
+      await getMyAssignedTasks({
+        executorId: req.user.id,
+        status: req.query.status,
+      });
+
+    return res.status(200).json({
+      success: true,
+
+      data: assignments,
+    });
+  } catch (error) {
+    console.error(
+      "Get assigned tasks error:",
+      error
+    );
+
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+

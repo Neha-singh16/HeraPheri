@@ -40,7 +40,7 @@ app.use("/api/v1/tasks", taskDiscoveryRoutes);
 app.use("/api/v1/tasks", taskRoutes);
 app.use("/api/v1/tasks", taskExecutionRoutes);
 app.use("/api/v1/matching", matchingRoutes);
-app.use("/api/v1/tasks", taskAssignmentRoutes);
+app.use("/api/v1/task-assignments", taskAssignmentRoutes);
 
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/tasks", taskReviewRoutes);

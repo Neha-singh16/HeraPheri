@@ -2,7 +2,7 @@ import express from "express";
 import {
   authenticate,
 } from "../middleware/authMiddleware.js";
-import { acceptTaskController } from "../controllers/taskAssignmentController.js";
+import { acceptTaskController ,   getMyAssignedTasksController,} from "../controllers/taskAssignmentController.js";
 
 const router = express.Router();
 
@@ -12,4 +12,9 @@ router.post(
   acceptTaskController
 );
 
+router.get(
+  "/mine",
+  authenticate,
+  getMyAssignedTasksController
+);
 export default router;

@@ -305,3 +305,41 @@ return assignment;
     throw error;
   }
 }
+
+
+
+export async function getMyAssignedTasks({
+  executorId,
+  status,
+}) {
+  const where = {
+    executor_id: executorId,
+  };
+
+  // Allow optional status filtering.
+  if (status) {
+    where.status = status;
+  }
+
+  const assignments =
+    await TaskAssignment.findAll({
+      where,
+
+      include: [
+        {
+          model: Task,
+          as: "task",
+        },
+      ],
+
+      order: [
+        [
+          "created_at",
+          "DESC",
+        ],
+      ],
+    });
+
+  return assignments;
+}
+

@@ -12,6 +12,7 @@ import googleClient from "../config/google.js";
 
 export async function registerLocalUser({ name, email, phone, password }) {
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone?.trim() || null;
 
   const existingUser = await User.findOne({
     where: {
@@ -23,12 +24,24 @@ export async function registerLocalUser({ name, email, phone, password }) {
     throw new Error("An account with this email already exists.");
   }
 
+  if (normalizedPhone) {
+    const existingPhone = await User.findOne({
+      where: {
+        phone: normalizedPhone,
+      },
+    });
+
+    if (existingPhone) {
+      throw new Error("An account with this phone number already exists.");
+    }
+  }
+
   const passwordHash = await hashPassword(password);
 
   const user = await User.create({
-    name,
+    name: name.trim(),
     email: normalizedEmail,
-    phone,
+    phone: normalizedPhone,
     password_hash: passwordHash,
     auth_provider: "LOCAL",
   });
