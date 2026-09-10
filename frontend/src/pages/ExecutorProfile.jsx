@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import api from "../api/client.jsx";
 import { useMode } from "../context/ModeContext.jsx";
 
@@ -8,6 +10,8 @@ const emptyForm = {
 };
 
 export default function ExecutorProfile() {
+  const navigate = useNavigate();
+
   const { setMode, refreshExecutorCapability } = useMode();
 
   const [profile, setProfile] = useState(null);
@@ -80,11 +84,27 @@ export default function ExecutorProfile() {
 
       setProfile(response.data.data);
 
-      await refreshExecutorCapability();
+      /*
+      Tell ModeContext that this user now
+      has Executor capability.
+    */
+      const capabilityEnabled = await refreshExecutorCapability();
 
-      setMode("EXECUTOR");
+      if (capabilityEnabled) {
+        setMode("EXECUTOR");
 
-      setMessage("Executor profile created successfully.");
+        /*
+        Take the user directly to the
+        Executor dashboard.
+      */
+        navigate("/dashboard", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      setMessage("Executor profile created. Please refresh the page.");
     } catch (error) {
       setError(
         error.response?.data?.message || "Unable to create Executor profile.",

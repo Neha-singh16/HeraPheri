@@ -79,8 +79,11 @@ export function AuthProvider({ children }) {
   }
 
   // LOGOUT
+
   async function logout() {
     const refreshToken = localStorage.getItem("refreshToken");
+
+    const currentUser = user;
 
     try {
       await api.post("/auth/logout", {
@@ -95,8 +98,11 @@ export function AuthProvider({ children }) {
 
       localStorage.removeItem("user");
 
-      if (user?.id) {
-        localStorage.removeItem(`activeMode:${user.id}`);
+      /*
+      Clear only this user's marketplace mode.
+    */
+      if (currentUser?.id) {
+        localStorage.removeItem(`activeMode:${currentUser.id}`);
       }
 
       setUser(null);

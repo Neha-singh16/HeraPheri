@@ -1,99 +1,125 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import api from "../api/client.jsx";
-
 import { useAuth } from "./AuthContext.jsx";
 
 const ModeContext = createContext(null);
 
 export function ModeProvider({ children }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   const [mode, setModeState] = useState("REQUESTER");
-
   const [hasExecutorProfile, setHasExecutorProfile] = useState(false);
+  const [capabilityLoading, setCapabilityLoading] = useState(true);
 
-  const [checkingExecutor, setCheckingExecutor] = useState(true);
+  /*
+    Keep mode separate for every user.
 
+    Before:
+      activeMode
+
+    Now:
+      activeMode:<userId>
+  */
   useEffect(() => {
-    async function loadExecutorCapability() {
-      if (!isAuthenticated || !user) {
-        setModeState("REQUESTER");
-        setHasExecutorProfile(false);
-        setCheckingExecutor(false);
-        return;
-      }
-
-      setCheckingExecutor(true);
-
-      try {
-        await api.get("/executor-profile");
-
-        // Executor profile exists.
-        setHasExecutorProfile(true);
-
-        const savedMode = localStorage.getItem(`activeMode:${user.id}`);
-
-        if (savedMode === "EXECUTOR") {
-          setModeState("EXECUTOR");
-        } else {
-          setModeState("REQUESTER");
-        }
-      } catch (error) {
-        if (error.response?.status === 404) {
-          // This user is not an Executor yet.
-          setHasExecutorProfile(false);
-          setModeState("REQUESTER");
-
-          localStorage.removeItem(`activeMode:${user.id}`);
-        } else {
-          console.error("Executor capability check failed:", error);
-
-          setModeState("REQUESTER");
-        }
-      } finally {
-        setCheckingExecutor(false);
-      }
-    }
-
-    loadExecutorCapability();
-  }, [isAuthenticated, user]);
-
-  function setMode(newMode) {
-    if (newMode === "REQUESTER") {
+    if (!user?.id) {
       setModeState("REQUESTER");
-
-      if (user) {
-        localStorage.setItem(`activeMode:${user.id}`, "REQUESTER");
-      }
-
+      setHasExecutorProfile(false);
+      setCapabilityLoading(false);
       return;
     }
 
-    if (newMode === "EXECUTOR" && hasExecutorProfile) {
-      setModeState("EXECUTOR");
+    const storageKey = `activeMode:${user.id}`;
+    const savedMode = localStorage.getItem(storageKey);
 
-      if (user) {
-        localStorage.setItem(`activeMode:${user.id}`, "EXECUTOR");
-      }
+    setModeState(savedMode || "REQUESTER");
+  }, [user?.id]);
+
+  async function fetchExecutorCapability() {
+    if (!user?.id) {
+      setHasExecutorProfile(false);
+      return false;
     }
-  }
 
-  async function refreshExecutorCapability() {
+    setCapabilityLoading(true);
+
     try {
       await api.get("/executor-profile");
 
       setHasExecutorProfile(true);
+
+      return true;
     } catch (error) {
       if (error.response?.status === 404) {
         setHasExecutorProfile(false);
+
+        // A user without an Executor profile can never stay
+        // in Executor mode.
         setModeState("REQUESTER");
+
+        localStorage.setItem(`activeMode:${user.id}`, "REQUESTER");
+
+        return false;
       }
+
+      console.error("Unable to check Executor capability:", error);
+
+      return false;
+    } finally {
+      setCapabilityLoading(false);
     }
   }
 
-  const isRequester = mode === "REQUESTER";
+  useEffect(() => {
+    fetchExecutorCapability();
+  }, [user?.id]);
 
+  function setMode(newMode) {
+    if (newMode !== "REQUESTER" && newMode !== "EXECUTOR") {
+      return;
+    }
+
+    /*
+      Executor mode is a capability, not just a UI preference.
+    */
+    if (newMode === "EXECUTOR" && !hasExecutorProfile) {
+      return;
+    }
+
+    if (!user?.id) {
+      return;
+    }
+
+    const storageKey = `activeMode:${user.id}`;
+
+    localStorage.setItem(storageKey, newMode);
+    setModeState(newMode);
+  }
+
+  async function refreshExecutorCapability() {
+    return fetchExecutorCapability();
+  }
+
+  /*
+    Safety:
+    If the Executor profile disappears/revokes capability,
+    immediately bring the user back to Requester mode.
+  */
+  useEffect(() => {
+    if (
+      !capabilityLoading &&
+      !hasExecutorProfile &&
+      mode === "EXECUTOR" &&
+      user?.id
+    ) {
+      const storageKey = `activeMode:${user.id}`;
+
+      localStorage.setItem(storageKey, "REQUESTER");
+      setModeState("REQUESTER");
+    }
+  }, [capabilityLoading, hasExecutorProfile, mode, user?.id]);
+
+  const isRequester = mode === "REQUESTER";
   const isExecutor = mode === "EXECUTOR";
 
   return (
@@ -106,8 +132,7 @@ export function ModeProvider({ children }) {
         isExecutor,
 
         hasExecutorProfile,
-
-        checkingExecutor,
+        capabilityLoading,
 
         refreshExecutorCapability,
       }}

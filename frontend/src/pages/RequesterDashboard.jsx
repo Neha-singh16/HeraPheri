@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-
 import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
+import { useMode } from "../context/ModeContext.jsx";
 
 export default function RequesterDashboard() {
   const { user } = useAuth();
 
-  const [tasks, setTasks] = useState([]);
+  const { hasExecutorProfile, capabilityLoading } = useMode();
 
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   async function fetchTasks() {
@@ -62,6 +63,26 @@ export default function RequesterDashboard() {
           + Create Task
         </Link>
       </div>
+
+      {/* Become an Executor onboarding */}
+      {!capabilityLoading && !hasExecutorProfile && (
+        <section className="executor-setup-card">
+          <div>
+            <p className="eyebrow">EARN WITH HEREPHERI</p>
+
+            <h2>Want to earn by completing tasks?</h2>
+
+            <p>
+              Create your Executor profile, choose when you're available, and
+              start finding tasks that match your skills.
+            </p>
+          </div>
+
+          <Link to="/executor-profile" className="primary-button">
+            Become an Executor →
+          </Link>
+        </section>
+      )}
 
       <section className="dashboard-stats">
         <div className="stat-card">

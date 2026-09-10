@@ -1,11 +1,7 @@
 import { useMode } from "../context/ModeContext.jsx";
 
 export default function ModeSwitcher() {
-  const { mode, setMode, hasExecutorProfile, checkingExecutor } = useMode();
-
-  if (checkingExecutor) {
-    return null;
-  }
+  const { mode, setMode, hasExecutorProfile, capabilityLoading } = useMode();
 
   return (
     <div className="mode-switcher">
@@ -16,7 +12,7 @@ export default function ModeSwitcher() {
         Request
       </button>
 
-      {hasExecutorProfile && (
+      {hasExecutorProfile && !capabilityLoading && (
         <button
           className={mode === "EXECUTOR" ? "mode-button active" : "mode-button"}
           onClick={() => setMode("EXECUTOR")}
