@@ -1,6 +1,8 @@
 import sequelize from "../config/database.js";
 import { createNotification } from "./notificationService.js";
 import { emitNotificationToUser } from "../socket/index.js";
+import { emitTaskUpdated } from "../socket/taskEvents.js";
+
 
 import {
   Task,
@@ -102,32 +104,28 @@ export async function acceptTask(taskId, executorId) {
     if (executor.account_status !== "ACTIVE") {
       throw new Error("Executor account is not active.");
     }
-// ---------------------------------------------------
-// Verify Executor identity status.
-//
-// IMPORTANT:
-// We check this again during ACCEPT.
-// Matching recommendations are not trusted blindly.
-// ---------------------------------------------------
-const verification =
-  await Verification.findOne({
-    where: {
-      user_id: executorId,
-      verification_type: "IDENTITY",
-    },
-    transaction,
-    lock: transaction.LOCK.UPDATE,
-  });
+    // ---------------------------------------------------
+    // Verify Executor identity status.
+    //
+    // IMPORTANT:
+    // We check this again during ACCEPT.
+    // Matching recommendations are not trusted blindly.
+    // ---------------------------------------------------
+    const verification = await Verification.findOne({
+      where: {
+        user_id: executorId,
+        verification_type: "IDENTITY",
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
 
-// Medium-risk tasks require verified identity.
-if (
-  task.risk_level === "MEDIUM" &&
-  verification?.status !== "VERIFIED"
-) {
-  throw new Error(
-    "Identity verification is required for medium-risk tasks."
-  );
-}
+    // Medium-risk tasks require verified identity.
+    if (task.risk_level === "MEDIUM" && verification?.status !== "VERIFIED") {
+      throw new Error(
+        "Identity verification is required for medium-risk tasks.",
+      );
+    }
 
     // ---------------------------------------------------
     // 4. Check current workload.
@@ -249,40 +247,40 @@ if (
       transaction,
     });
 
-    
-const notification =
-  await createNotification({
-    userId: task.requester_id,
+    const notification = await createNotification({
+      userId: task.requester_id,
 
-    type: "TASK_ASSIGNED",
+      type: "TASK_ASSIGNED",
 
-    title: "Task accepted",
+      title: "Task accepted",
 
-    message:
-      "Your task has been accepted by an Executor.",
+      message: "Your task has been accepted by an Executor.",
 
-    data: {
-      taskId: task.id,
-      assignmentId: assignment.id,
-      executorId,
-    },
+      data: {
+        taskId: task.id,
+        assignmentId: assignment.id,
+        executorId,
+      },
 
-    transaction,
-  });
+      transaction,
+    });
 
-await transaction.commit();
+    await transaction.commit();
 
-// -----------------------------------------------
-// IMPORTANT:
-// Emit only AFTER the DB transaction succeeds.
-// -----------------------------------------------
-try {
-  emitNotificationToUser(
-    task.requester_id,
-    notification
-  );
-} catch (socketError) {
-  /*
+    // -----------------------------------------------
+    // IMPORTANT:
+    // Emit only AFTER the DB transaction succeeds.
+    // -----------------------------------------------
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      reason: "TASK_ASSIGNED",
+    });
+    try {
+      emitNotificationToUser(task.requester_id, notification);
+    } catch (socketError) {
+      /*
     Socket failure must not make a successful
     database transaction look like a failure.
 
@@ -291,14 +289,10 @@ try {
 
     GET /api/v1/notifications
   */
-  console.error(
-    "Realtime notification failed:",
-    socketError.message
-  );
-}
+      console.error("Realtime notification failed:", socketError.message);
+    }
 
-return assignment;
-
+    return assignment;
   } catch (error) {
     await transaction.rollback();
 
@@ -306,12 +300,7 @@ return assignment;
   }
 }
 
-
-
-export async function getMyAssignedTasks({
-  executorId,
-  status,
-}) {
+export async function getMyAssignedTasks({ executorId, status }) {
   const where = {
     executor_id: executorId,
   };
@@ -321,25 +310,18 @@ export async function getMyAssignedTasks({
     where.status = status;
   }
 
-  const assignments =
-    await TaskAssignment.findAll({
-      where,
+  const assignments = await TaskAssignment.findAll({
+    where,
 
-      include: [
-        {
-          model: Task,
-          as: "task",
-        },
-      ],
+    include: [
+      {
+        model: Task,
+        as: "task",
+      },
+    ],
 
-      order: [
-        [
-          "created_at",
-          "DESC",
-        ],
-      ],
-    });
+    order: [["created_at", "DESC"]],
+  });
 
   return assignments;
 }
-

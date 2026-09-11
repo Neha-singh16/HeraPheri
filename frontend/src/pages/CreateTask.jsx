@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +20,8 @@ const initialForm = {
   longitude: "",
 };
 
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org";
+
 export default function CreateTask() {
   const navigate = useNavigate();
 
@@ -28,6 +30,154 @@ export default function CreateTask() {
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
+
+  const [locationQuery, setLocationQuery] = useState("");
+
+  const [locationResults, setLocationResults] = useState([]);
+
+  const [locationSearching, setLocationSearching] = useState(false);
+
+  const [locationError, setLocationError] = useState("");
+
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  useEffect(() => {
+    const query = locationQuery.trim();
+
+    if (query.length < 3 || form.addressText === query) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setLocationSearching(true);
+      setLocationError("");
+
+      try {
+        const response = await fetch(
+          `${NOMINATIM_URL}/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`,
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Location search failed.");
+        }
+
+        setLocationResults(await response.json());
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setLocationError("Unable to search for that place.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLocationSearching(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [form.addressText, locationQuery]);
+
+  function selectLocation(location) {
+    setForm({
+      ...form,
+      addressText: location.display_name,
+      latitude: location.lat,
+      longitude: location.lon,
+    });
+    setLocationQuery(location.display_name);
+    setLocationResults([]);
+    setLocationSearching(false);
+    setLocationError("");
+  }
+
+  function handleLocationQueryChange(event) {
+    const value = event.target.value;
+
+    setLocationQuery(value);
+    setLocationResults([]);
+    setLocationSearching(false);
+
+    if (value !== form.addressText) {
+      setForm({
+        ...form,
+        addressText: "",
+        latitude: "",
+        longitude: "",
+      });
+    }
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          const response = await fetch(
+            `${NOMINATIM_URL}/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+            {
+              headers: {
+                Accept: "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error("Reverse geocoding failed.");
+          }
+
+          const location = await response.json();
+
+          setForm({
+            ...form,
+            addressText: location.display_name || "Current location",
+            latitude,
+            longitude,
+          });
+          setLocationQuery(location.display_name || "Current location");
+        } catch {
+          setForm({
+            ...form,
+            addressText: "Current location",
+            latitude,
+            longitude,
+          });
+          setLocationQuery("Current location");
+          setLocationError(
+            "Coordinates were found, but the address could not be loaded.",
+          );
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      () => {
+        setLocationError("Please allow location access to use your location.");
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    );
+  }
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -69,6 +219,16 @@ export default function CreateTask() {
 
       // Physical and Hybrid tasks need location.
       if (form.taskMode === "PHYSICAL" || form.taskMode === "HYBRID") {
+        if (
+          !form.addressText.trim() ||
+          form.latitude === "" ||
+          form.longitude === ""
+        ) {
+          setError("Select a location before creating this task.");
+          setLoading(false);
+          return;
+        }
+
         payload.latitude = Number(form.latitude);
 
         payload.longitude = Number(form.longitude);
@@ -250,43 +410,57 @@ export default function CreateTask() {
           <section className="form-section">
             <h2>Location</h2>
 
-            <label>
-              Address
+            <label className="location-picker-label">
+              <span>Search for a place</span>
               <input
-                name="addressText"
-                value={form.addressText}
-                onChange={handleChange}
-                placeholder="123 Main Street, Delhi"
+                value={locationQuery}
+                onChange={handleLocationQueryChange}
+                placeholder="Kasturba DSEU, Pitampura"
                 required
               />
             </label>
 
-            <div className="form-grid">
-              <label>
-                Latitude
-                <input
-                  type="number"
-                  name="latitude"
-                  value={form.latitude}
-                  onChange={handleChange}
-                  step="any"
-                  placeholder="28.6139"
-                  required
-                />
-              </label>
+            {locationSearching && (
+              <small className="location-hint">Searching places...</small>
+            )}
 
-              <label>
-                Longitude
-                <input
-                  type="number"
-                  name="longitude"
-                  value={form.longitude}
-                  onChange={handleChange}
-                  step="any"
-                  placeholder="77.2090"
-                  required
-                />
-              </label>
+            {locationResults.length > 0 && (
+              <div className="location-results">
+                {locationResults.map((location) => (
+                  <button
+                    type="button"
+                    className="location-result"
+                    key={location.place_id}
+                    onClick={() => selectLocation(location)}
+                  >
+                    {location.display_name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {form.addressText && (
+              <div className="selected-location">
+                <span aria-hidden="true">✓</span>
+                <strong>{form.addressText}</strong>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="secondary-button location-button"
+              onClick={useCurrentLocation}
+              disabled={locationLoading}
+            >
+              {locationLoading ? "Finding your location..." : "Use my current location"}
+            </button>
+
+            {locationError && (
+              <small className="location-error">{locationError}</small>
+            )}
+
+            <div className="location-coordinates" aria-hidden="true">
+              {form.latitude}, {form.longitude}
             </div>
           </section>
         )}

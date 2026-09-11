@@ -4,6 +4,7 @@ import { Dispute, TaskAssignment } from "../models/index.js";
 import { Op } from "sequelize";
 import { releasePaymentForTask } from "./paymentService.js";
 import { createTaskEvent } from "./taskEventService.js";
+import { emitTaskUpdated } from "../socket/taskEvents.js";
 
 export async function approveTask(taskId, requesterId) {
   const transaction = await sequelize.transaction();
@@ -73,6 +74,14 @@ export async function approveTask(taskId, requesterId) {
     });
 
     await transaction.commit();
+    emitTaskUpdated({
+  taskId,
+  userIds: [
+    requesterId,
+    assignment.executor_id,
+  ],
+  reason: "TASK_APPROVED",
+});
 
     return task;
   } catch (error) {

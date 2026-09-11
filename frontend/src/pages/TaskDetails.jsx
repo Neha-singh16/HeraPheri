@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { Link, useNavigate, useParams } from "react-router-dom";
-
+import {
+  useSocket,
+} from "../context/SocketContext.jsx";
 import api from "../api/client.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
@@ -31,6 +33,7 @@ function formatDate(date) {
 
 export default function TaskDetails() {
   const { taskId } = useParams();
+  const { socket } = useSocket();
 
   const { user } = useAuth();
   const { isExecutor } = useMode();
@@ -65,6 +68,26 @@ export default function TaskDetails() {
   useEffect(() => {
     fetchTask();
   }, [taskId]);
+
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    function handleTaskUpdated(event) {
+      if (event.taskId !== taskId) {
+        return;
+      }
+
+      fetchTask();
+    }
+
+    socket.on("task:updated", handleTaskUpdated);
+
+    return () => {
+      socket.off("task:updated", handleTaskUpdated);
+    };
+  }, [socket, taskId]);
 
   async function cancelTask() {
     const confirmed = window.confirm(

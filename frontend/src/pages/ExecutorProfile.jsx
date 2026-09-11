@@ -9,6 +9,37 @@ const emptyForm = {
   bio: "",
 };
 
+function formatRelativeTime(date) {
+  if (!date) {
+    return "Location not set";
+  }
+
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(date).getTime()) / 1000),
+  );
+
+  if (elapsedSeconds < 60) {
+    return "Updated just now";
+  }
+
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+
+  if (elapsedMinutes < 60) {
+    return `Updated ${elapsedMinutes} minute${elapsedMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `Updated ${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+
+  return `Updated ${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
+}
+
 export default function ExecutorProfile() {
   const navigate = useNavigate();
 
@@ -257,7 +288,7 @@ export default function ExecutorProfile() {
 
               <span
                 className={
-                  profile.is_available
+                    profile.is_available
                     ? "availability-badge available"
                     : "availability-badge unavailable"
                 }
@@ -281,15 +312,6 @@ export default function ExecutorProfile() {
                 {profile.is_available ? "Go Offline" : "Go Available"}
               </button>
 
-              <button
-                className="secondary-button"
-                onClick={updateLocation}
-                disabled={locationLoading}
-              >
-                {locationLoading
-                  ? "Updating location..."
-                  : "Update My Location"}
-              </button>
             </div>
           </section>
 
@@ -324,7 +346,7 @@ export default function ExecutorProfile() {
           <section className="profile-card">
             <div className="profile-card-header">
               <div>
-                <h2>Current location</h2>
+                <h2>Location</h2>
 
                 <p>Required for physical and hybrid task matching.</p>
               </div>
@@ -332,12 +354,18 @@ export default function ExecutorProfile() {
 
             <div className="location-status">
               <div>
-                <small>Last updated</small>
+                <small>
+                  <span
+                    className={`location-dot ${profile.is_available ? "location-dot-active" : ""}`}
+                    aria-hidden="true"
+                  />
+                  {profile.is_available
+                    ? "Executor is available"
+                    : "Executor is unavailable"}
+                </small>
 
                 <strong>
-                  {profile.last_location_at
-                    ? new Date(profile.last_location_at).toLocaleString("en-IN")
-                    : "Location not set"}
+                  {formatRelativeTime(profile.last_location_at)}
                 </strong>
               </div>
 
@@ -346,7 +374,7 @@ export default function ExecutorProfile() {
                 onClick={updateLocation}
                 disabled={locationLoading}
               >
-                {locationLoading ? "Updating..." : "Refresh Location"}
+                {locationLoading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
           </section>

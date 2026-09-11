@@ -22,6 +22,9 @@ import Notifications from "./pages/Notifications.jsx";
 import Reputation from "./pages/Reputation.jsx";
 import ExecutorProfile from "./pages/ExecutorProfile.jsx";
 import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
+import {
+  SocketProvider,
+} from "./context/SocketContext.jsx";
 
 import { ModeProvider } from "./context/ModeContext.jsx";
 
@@ -29,6 +32,7 @@ function App() {
   return (
     <AuthProvider>
       <ModeProvider>
+         <SocketProvider>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
@@ -145,6 +149,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </SocketProvider>
       </ModeProvider>
     </AuthProvider>
   );

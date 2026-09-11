@@ -1,7 +1,7 @@
 import sequelize from "../config/database.js";
 import razorpay from "../config/razorpay.js";
 import { verifyPaymentSignature } from "../utils/razorpay.js";
-
+import { emitTaskUpdated } from "../socket/taskEvents.js";
 import { Task, TaskAssignment, Payment, LedgerEntry } from "../models/index.js";
 
 export async function createPaymentOrder(taskId, requesterId) {
@@ -42,7 +42,10 @@ export async function createPaymentOrder(taskId, requesterId) {
       transaction,
     });
 
-    if (existingPayment && ["HELD", "RELEASED"].includes(existingPayment.status)) {
+    if (
+      existingPayment &&
+      ["HELD", "RELEASED"].includes(existingPayment.status)
+    ) {
       throw new Error("Payment already exists for this task.");
     }
 
@@ -179,6 +182,11 @@ export async function verifyPayment({
     );
 
     await transaction.commit();
+    emitTaskUpdated({
+      taskId: payment.task_id,
+      userIds: [requesterId, payment.executor_id],
+      reason: "PAYMENT_HELD",
+    });
     // HELD?
     // This is our platform state, not necessarily Razorpay's literal payment state.
     // “The customer paid, but the Executor hasn't earned/retrieved the money yet.”
