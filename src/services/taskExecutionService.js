@@ -1,6 +1,11 @@
 import sequelize from "../config/database.js";
 import { Task, TaskAssignment, TaskProof, Payment } from "../models/index.js";
 import { createTaskEvent } from "./taskEventService.js";
+import { emitTaskUpdated } from "../socket/taskEvents.js";
+import {
+  createTaskNotifications,
+  emitTaskNotifications,
+} from "./taskNotificationService.js";
 
 export async function startTask(taskId, executorId) {
   const transaction = await sequelize.transaction();
@@ -74,7 +79,23 @@ export async function startTask(taskId, executorId) {
       transaction,
     });
 
+    const notifications = await createTaskNotifications({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      type: "TASK_STARTED",
+      title: "Task started",
+      message: "The Executor has started working on your task.",
+      transaction,
+    });
+
     await transaction.commit();
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      reason: "TASK_STARTED",
+    });
+    emitTaskNotifications(notifications);
 
     return task;
   } catch (error) {
@@ -158,7 +179,26 @@ export async function submitProof({
       transaction,
     });
 
+    const notifications = await createTaskNotifications({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      type: "PROOF_SUBMITTED",
+      title: "Work submitted",
+      message: "The Executor submitted proof and your review is required.",
+      data: {
+        proofId: proof.id,
+      },
+      transaction,
+    });
+
     await transaction.commit();
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      reason: "PROOF_SUBMITTED",
+    });
+    emitTaskNotifications(notifications);
 
     return proof;
   } catch (error) {

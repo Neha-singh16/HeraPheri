@@ -3,6 +3,11 @@ import razorpay from "../config/razorpay.js";
 import { verifyPaymentSignature } from "../utils/razorpay.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
 import { Task, TaskAssignment, Payment, LedgerEntry } from "../models/index.js";
+import { createTaskEvent } from "./taskEventService.js";
+import {
+  createTaskNotifications,
+  emitTaskNotifications,
+} from "./taskNotificationService.js";
 
 export async function createPaymentOrder(taskId, requesterId) {
   const transaction = await sequelize.transaction();
@@ -181,12 +186,29 @@ export async function verifyPayment({
       },
     );
 
+    await createTaskEvent({
+      taskId: payment.task_id,
+      actorUserId: requesterId,
+      eventType: "PAYMENT_HELD",
+      transaction,
+    });
+
+    const notifications = await createTaskNotifications({
+      taskId: payment.task_id,
+      userIds: [payment.requester_id, payment.executor_id],
+      type: "PAYMENT_HELD",
+      title: "Task funded",
+      message: "The task payment has been secured and is ready for execution.",
+      transaction,
+    });
+
     await transaction.commit();
     emitTaskUpdated({
       taskId: payment.task_id,
       userIds: [requesterId, payment.executor_id],
       reason: "PAYMENT_HELD",
     });
+    emitTaskNotifications(notifications);
     // HELD?
     // This is our platform state, not necessarily Razorpay's literal payment state.
     // “The customer paid, but the Executor hasn't earned/retrieved the money yet.”

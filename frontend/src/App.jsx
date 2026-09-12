@@ -22,9 +22,9 @@ import Notifications from "./pages/Notifications.jsx";
 import Reputation from "./pages/Reputation.jsx";
 import ExecutorProfile from "./pages/ExecutorProfile.jsx";
 import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
-import {
-  SocketProvider,
-} from "./context/SocketContext.jsx";
+import Earnings from "./pages/Earnings.jsx";
+import AdminDisputes from "./pages/AdminDisputes.jsx";
+import { SocketProvider } from "./context/SocketContext.jsx";
 
 import { ModeProvider } from "./context/ModeContext.jsx";
 
@@ -32,123 +32,136 @@ function App() {
   return (
     <AuthProvider>
       <ModeProvider>
-         <SocketProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<Login />} />
+        <SocketProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/login" element={<Login />} />
 
-          <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Protected application */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-
-            {/* REQUESTER ONLY */}
-
+            {/* Protected application */}
             <Route
-              path="/tasks"
               element={
-                <ModeRoute mode="REQUESTER">
-                  <MyTasks />
-                </ModeRoute>
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
               }
-            />
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-              path="/tasks/create"
-              element={
-                <ModeRoute mode="REQUESTER">
-                  <CreateTask />
-                </ModeRoute>
-              }
-            />
+              {/* REQUESTER ONLY */}
 
-            <Route
-              path="/tasks/:taskId/review"
-              element={
-                <ModeRoute mode="REQUESTER">
-                  <TaskReview />
-                </ModeRoute>
-              }
-            />
+              <Route
+                path="/tasks"
+                element={
+                  <ModeRoute mode="REQUESTER">
+                    <MyTasks />
+                  </ModeRoute>
+                }
+              />
 
-            <Route
-              path="/tasks/:taskId/matches"
-              element={
-                <ModeRoute mode="REQUESTER">
-                  <TaskMatches />
-                </ModeRoute>
-              }
-            />
+              <Route
+                path="/tasks/create"
+                element={
+                  <ModeRoute mode="REQUESTER">
+                    <CreateTask />
+                  </ModeRoute>
+                }
+              />
 
-            <Route
-              path="/tasks/:taskId/payment"
-              element={
-                <ModeRoute mode="REQUESTER">
-                  <Payment />
-                </ModeRoute>
-              }
-            />
+              <Route
+                path="/tasks/:taskId/review"
+                element={
+                  <ModeRoute mode="REQUESTER">
+                    <TaskReview />
+                  </ModeRoute>
+                }
+              />
 
-            {/* EXECUTOR ONLY */}
+              <Route
+                path="/tasks/:taskId/matches"
+                element={
+                  <ModeRoute mode="REQUESTER">
+                    <TaskMatches />
+                  </ModeRoute>
+                }
+              />
 
-            <Route
-              path="/find-tasks"
-              element={
-                <ModeRoute mode="EXECUTOR">
-                  <FindTasks />
-                </ModeRoute>
-              }
-            />
+              <Route
+                path="/tasks/:taskId/payment"
+                element={
+                  <ModeRoute mode="REQUESTER">
+                    <Payment />
+                  </ModeRoute>
+                }
+              />
 
-            <Route
-              path="/executor/assignments"
-              element={
-                <ModeRoute mode="EXECUTOR">
-                  <ExecutorAssignments />
-                </ModeRoute>
-              }
-            />
+              {/* EXECUTOR ONLY */}
 
-            <Route
-              path="/tasks/:taskId/execute"
-              element={
-                <ModeRoute mode="EXECUTOR">
-                  <TaskExecution />
-                </ModeRoute>
-              }
-            />
+              <Route
+                path="/find-tasks"
+                element={
+                  <ModeRoute mode="EXECUTOR">
+                    <FindTasks />
+                  </ModeRoute>
+                }
+              />
 
-            {/* Shared onboarding / profile page */}
+              <Route
+                path="/executor/assignments"
+                element={
+                  <ModeRoute mode="EXECUTOR">
+                    <ExecutorAssignments />
+                  </ModeRoute>
+                }
+              />
 
-            <Route path="/executor-profile" element={<ExecutorProfile />} />
+              <Route
+                path="/tasks/:taskId/execute"
+                element={
+                  <ModeRoute mode="EXECUTOR">
+                    <TaskExecution />
+                  </ModeRoute>
+                }
+              />
 
-            {/* Shared */}
+              <Route
+                path="/earnings"
+                element={
+                  <ModeRoute mode="EXECUTOR">
+                    <Earnings />
+                  </ModeRoute>
+                }
+              />
+              {/* Shared onboarding / profile page */}
 
-            <Route path="/tasks/:taskId" element={<TaskDetails />} />
+              <Route path="/executor-profile" element={<ExecutorProfile />} />
 
-            <Route path="/notifications" element={<Notifications />} />
+              {/* Shared */}
 
-            <Route path="/reputation" element={<Reputation />} />
+              <Route path="/tasks/:taskId" element={<TaskDetails />} />
 
-            <Route
-              path="/settings"
-              element={<div>Settings coming soon.</div>}
-            />
+              <Route path="/notifications" element={<Notifications />} />
 
-            <Route path="/profile" element={<div>Profile coming soon.</div>} />
-          </Route>
+              <Route path="/admin/disputes" element={<AdminDisputes />} />
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/reputation" element={<Reputation />} />
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+              <Route
+                path="/settings"
+                element={<div>Settings coming soon.</div>}
+              />
+
+              <Route
+                path="/profile"
+                element={<div>Profile coming soon.</div>}
+              />
+            </Route>
+
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </SocketProvider>
       </ModeProvider>
     </AuthProvider>

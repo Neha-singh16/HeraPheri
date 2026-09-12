@@ -5,6 +5,10 @@ import { Op } from "sequelize";
 import { releasePaymentForTask } from "./paymentService.js";
 import { createTaskEvent } from "./taskEventService.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
+import {
+  createTaskNotifications,
+  emitTaskNotifications,
+} from "./taskNotificationService.js";
 
 export async function approveTask(taskId, requesterId) {
   const transaction = await sequelize.transaction();
@@ -73,15 +77,38 @@ export async function approveTask(taskId, requesterId) {
       transaction,
     });
 
+    const notifications = await createTaskNotifications({
+      taskId,
+      userIds: [requesterId, assignment.executor_id],
+      type: "TASK_APPROVED",
+      title: "Task approved",
+      message: "The submitted work was approved successfully.",
+      transaction,
+    });
+
+    const releaseNotifications = await createTaskNotifications({
+      taskId,
+      userIds: [requesterId, assignment.executor_id],
+      type: "PAYMENT_RELEASED",
+      title: "Payment released",
+      message: "Payment has been released to the Executor.",
+      transaction,
+    });
+
     await transaction.commit();
+    const participantIds = [requesterId, assignment.executor_id];
+
     emitTaskUpdated({
-  taskId,
-  userIds: [
-    requesterId,
-    assignment.executor_id,
-  ],
-  reason: "TASK_APPROVED",
-});
+      taskId,
+      userIds: participantIds,
+      reason: "TASK_APPROVED",
+    });
+    emitTaskUpdated({
+      taskId,
+      userIds: participantIds,
+      reason: "PAYMENT_RELEASED",
+    });
+    emitTaskNotifications([...notifications, ...releaseNotifications]);
 
     return task;
   } catch (error) {
@@ -170,7 +197,26 @@ export async function createDispute({ taskId, userId, reason, description }) {
       transaction,
     });
 
+    const notifications = await createTaskNotifications({
+      taskId,
+      userIds: [task.requester_id, assignment.executor_id],
+      type: "TASK_DISPUTED",
+      title: "Task disputed",
+      message: "This task is disputed and is locked pending review.",
+      data: {
+        disputeId: dispute.id,
+      },
+      transaction,
+    });
+
     await transaction.commit();
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id, assignment.executor_id],
+      reason: "TASK_DISPUTED",
+    });
+    emitTaskNotifications(notifications);
 
     return dispute;
   } catch (error) {

@@ -55,7 +55,11 @@ export default function Sidebar() {
       path: "/executor/assignments",
       icon: "✓",
     },
-
+{
+  label: "Earnings",
+  path: "/earnings",
+  icon: "₹",
+},
     {
       label: "Executor Profile",
       path: "/executor-profile",

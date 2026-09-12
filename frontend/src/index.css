@@ -1731,6 +1731,34 @@ button:disabled {
 .location-status button {
   width: auto;
 }
+.admin-dispute-list {
+  display: grid;
+  gap: 22px;
+  max-width: 900px;
+}
+.admin-dispute-card {
+  margin-bottom: 0;
+}
+.admin-dispute-card .detail-grid {
+  margin-bottom: 22px;
+}
+.admin-dispute-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.admin-dispute-actions button {
+  width: auto;
+}
+.admin-nav-link {
+  color: #69727d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.admin-nav-link:hover {
+  color: #17202a;
+}
 @media (max-width: 800px) {
   .profile-stats {
     grid-template-columns: repeat(2, 1fr);

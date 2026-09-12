@@ -17,6 +17,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import verificationRoutes from "./routes/verificationRoutes.js";
 import ratingRoutes from "./routes/ratingRoutes.js";
  
+import earningsRoutes from "./routes/earningsRoutes.js";
+import adminDisputeRoutes from "./routes/adminDisputeRoutes.js";
 
 const app = express();
 
@@ -46,6 +48,11 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/tasks", taskReviewRoutes);
 app.use("/api/v1/ratings", ratingRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use(
+  "/api/v1/earnings",
+  earningsRoutes,
+);
+app.use("/api/v1/admin/disputes", adminDisputeRoutes);
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
