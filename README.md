@@ -54,3 +54,22 @@ Razorpay says REFUNDED
 MySQL says HELD
 
 That's exactly the type of edge case we want to eliminate before calling this production-ready.
+
+
+
+PHASE 🔐 PAYMENT HARDENING
+───────────────────────────
+
+✅ REFUND_REQUESTED state
+✅ DB transaction before queue
+✅ BullMQ retry
+✅ Exponential backoff
+✅ Idempotent ledger helper
+
+NOW:
+1. Fix Payment ENUM mismatch
+2. Make PAYMENT_HELD ledger idempotent
+3. Make refund retry/reconciliation safe
+4. Test concurrent refund calls
+5. Test duplicate release
+6. Test duplicate payment verification

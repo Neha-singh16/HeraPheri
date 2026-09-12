@@ -169,7 +169,14 @@ worker.on("completed", (job) => {
 });
 
 worker.on("failed", (job, error) => {
-  console.error(`❌ Task job failed: ${job?.id}`, error);
+  console.error("❌ Task job failed", {
+    id: job?.id,
+    name: job?.name,
+    taskId: job?.data?.taskId,
+    paymentId: job?.data?.paymentId,
+    attemptsMade: job?.attemptsMade,
+    error: error.message,
+  });
 });
 
 worker.on("stalled", (jobId) => {

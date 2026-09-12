@@ -174,20 +174,16 @@ export async function verifyPayment({
       },
     );
 
-    await LedgerEntry.create(
-      {
-        user_id: payment.requester_id,
-        task_id: payment.task_id,
-        payment_id: payment.id,
-        entry_type: "PAYMENT_HELD",
-        amount: payment.gross_amount,
-        direction: "DEBIT",
-        reference: razorpayPaymentId,
-      },
-      {
-        transaction,
-      },
-    );
+    await createLedgerEntryOnce({
+      paymentId: payment.id,
+      taskId: payment.task_id,
+      userId: payment.requester_id,
+      entryType: "PAYMENT_HELD",
+      amount: payment.gross_amount,
+      direction: "DEBIT",
+      reference: razorpayPaymentId,
+      transaction,
+    });
 
     await createTaskEvent({
       taskId: payment.task_id,

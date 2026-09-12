@@ -89,7 +89,7 @@ export async function createTask({
       {
         requester_id: requesterId,
         category,
-        task_mode: taskMode,
+        // task_mode: taskMode,
         title: taskMode,
         title: title.trim(),
         description: description.trim(),
@@ -189,18 +189,16 @@ export async function getMyTasks({
 }
 
 // Get one task.
-export async function getTaskById({ taskId, userId }) {
+export async function getTaskById({
+  taskId,
+  userId,
+}) {
   const task = await Task.findByPk(taskId, {
     include: [
       {
         model: Payment,
         as: "payment",
 
-        /*
-          Only expose the fields the UI actually needs.
-          Never expose provider secrets or unnecessary
-          payment-provider internals.
-        */
         attributes: [
           "id",
           "gross_amount",
@@ -217,6 +215,43 @@ export async function getTaskById({ taskId, userId }) {
 
   if (!task) {
     throw new Error("Task not found.");
+  }
+
+  /*
+    Authorization:
+    A task is visible only to:
+    1. The requester who created it
+    2. The Executor currently assigned to it
+  */
+
+  const isRequester =
+    task.requester_id === userId;
+
+  if (isRequester) {
+    return task;
+  }
+
+  const assignment =
+    await TaskAssignment.findOne({
+      where: {
+        task_id: task.id,
+        executor_id: userId,
+        status: {
+          [Op.in]: [
+            "ACTIVE",
+            "COMPLETED",
+            "RELEASED",
+          ],
+        },
+      },
+    });
+
+  const isExecutor = Boolean(assignment);
+
+  if (!isExecutor) {
+    throw new Error(
+      "You are not authorized to view this task.",
+    );
   }
 
   return task;

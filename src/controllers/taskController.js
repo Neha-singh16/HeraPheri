@@ -6,10 +6,7 @@ import {
   cancelTask,
 } from "../services/taskService.js";
 
-export async function createTaskController(
-  req,
-  res
-) {
+export async function createTaskController(req, res) {
   try {
     const {
       category,
@@ -55,10 +52,7 @@ export async function createTaskController(
   }
 }
 
-export async function getMyTasksController(
-  req,
-  res
-) {
+export async function getMyTasksController(req, res) {
   try {
     const result = await getMyTasks({
       requesterId: req.user.id,
@@ -82,10 +76,7 @@ export async function getMyTasksController(
   }
 }
 
-export async function getTaskController(
-  req,
-  res
-) {
+export async function getTaskController(req, res) {
   try {
     const task = await getTaskById({
       taskId: req.params.taskId,
@@ -97,6 +88,13 @@ export async function getTaskController(
       data: task,
     });
   } catch (error) {
+    if (error.message === "You are not authorized to view this task.") {
+      return res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(404).json({
       success: false,
       message: error.message,
@@ -104,10 +102,7 @@ export async function getTaskController(
   }
 }
 
-export async function updateTaskController(
-  req,
-  res
-) {
+export async function updateTaskController(req, res) {
   try {
     const task = await updateTask({
       taskId: req.params.taskId,
@@ -130,10 +125,7 @@ export async function updateTaskController(
   }
 }
 
-export async function cancelTaskController(
-  req,
-  res
-) {
+export async function cancelTaskController(req, res) {
   try {
     const task = await cancelTask({
       taskId: req.params.taskId,
