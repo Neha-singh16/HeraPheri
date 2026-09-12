@@ -72,6 +72,7 @@ const Payment = sequelize.define(
         "AUTHORIZED",
         "HELD",
         "RELEASED",
+        "REFUND_REQUESTED",
         "REFUNDED",
         "PARTIALLY_REFUNDED",
         "FAILED",

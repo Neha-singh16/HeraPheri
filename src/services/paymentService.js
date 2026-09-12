@@ -4,6 +4,7 @@ import { verifyPaymentSignature } from "../utils/razorpay.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
 import { Task, TaskAssignment, Payment, LedgerEntry } from "../models/index.js";
 import { createTaskEvent } from "./taskEventService.js";
+import { createLedgerEntryOnce } from "./ledgerService.js";
 import {
   createTaskNotifications,
   emitTaskNotifications,
@@ -49,7 +50,9 @@ export async function createPaymentOrder(taskId, requesterId) {
 
     if (
       existingPayment &&
-      ["HELD", "RELEASED"].includes(existingPayment.status)
+      ["HELD", "RELEASED", "REFUND_REQUESTED", "REFUNDED"].includes(
+        existingPayment.status,
+      )
     ) {
       throw new Error("Payment already exists for this task.");
     }
@@ -269,24 +272,16 @@ export async function releasePaymentForTask({ taskId, transaction }) {
     This is an internal wallet/ledger credit.
     It is NOT yet a bank payout.
   */
-  await LedgerEntry.create(
-    {
-      user_id: payment.executor_id,
-      task_id: payment.task_id,
-      payment_id: payment.id,
-
-      entry_type: "EXECUTOR_EARNING",
-
-      amount: payment.executor_amount,
-
-      direction: "CREDIT",
-
-      reference: `TASK_RELEASE:${taskId}`,
-    },
-    {
-      transaction,
-    },
-  );
+await createLedgerEntryOnce({
+  paymentId: payment.id,
+  taskId: payment.task_id,
+  userId: payment.executor_id,
+  entryType: "EXECUTOR_EARNING",
+  amount: payment.executor_amount,
+  direction: "CREDIT",
+  reference: `TASK_RELEASE:${taskId}`,
+  transaction,
+});
 
   /*
     Record the platform fee separately.
@@ -312,4 +307,122 @@ export async function releasePaymentForTask({ taskId, transaction }) {
   );
 
   return payment;
+}
+
+export async function requestRefundForTask({ taskId, transaction }) {
+  const payment = await Payment.findOne({
+    where: {
+      task_id: taskId,
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+
+  if (!payment) {
+    throw new Error("Payment not found for this task.");
+  }
+
+  // Idempotent refund.
+  if (
+    payment.status === "REFUNDED" ||
+    payment.status === "REFUND_REQUESTED"
+  ) {
+    return payment;
+  }
+
+  if (payment.status !== "HELD") {
+    throw new Error("Only held payments can be refunded.");
+  }
+
+  if (!payment.provider_payment_id) {
+    throw new Error("The held payment has no provider payment ID.");
+  }
+
+  await payment.update(
+    {
+      status: "REFUND_REQUESTED",
+    },
+    {
+      transaction,
+    },
+  );
+
+  return payment;
+}
+
+export async function processRefundForTask({ taskId, reason }) {
+  const payment = await Payment.findOne({
+    where: {
+      task_id: taskId,
+    },
+  });
+
+  if (!payment) {
+    throw new Error("Payment not found for this task.");
+  }
+
+  if (payment.status === "REFUNDED") {
+    return payment;
+  }
+
+  if (payment.status !== "REFUND_REQUESTED") {
+    throw new Error("Only requested refunds can be processed.");
+  }
+
+  if (!payment.provider_payment_id) {
+    throw new Error("The requested refund has no provider payment ID.");
+  }
+
+  await razorpay.payments.refund(payment.provider_payment_id, {
+    amount: Math.round(Number(payment.gross_amount) * 100),
+  });
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    const lockedPayment = await Payment.findOne({
+      where: {
+        id: payment.id,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (lockedPayment.status === "REFUNDED") {
+      await transaction.commit();
+      return lockedPayment;
+    }
+
+    await lockedPayment.update(
+      {
+        status: "REFUNDED",
+        refunded_at: new Date(),
+      },
+      { transaction },
+    );
+
+    await createLedgerEntryOnce({
+      paymentId: lockedPayment.id,
+      taskId: lockedPayment.task_id,
+      userId: lockedPayment.requester_id,
+      entryType: "REFUND",
+      amount: lockedPayment.gross_amount,
+      direction: "CREDIT",
+      reference: `${reason || "REFUND"}:${lockedPayment.task_id}`,
+      transaction,
+    });
+
+    await createTaskEvent({
+      taskId: lockedPayment.task_id,
+      actorUserId: lockedPayment.requester_id,
+      eventType: "PAYMENT_REFUNDED",
+      transaction,
+    });
+
+    await transaction.commit();
+    return lockedPayment;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }

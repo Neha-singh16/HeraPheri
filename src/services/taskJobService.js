@@ -43,3 +43,17 @@ export async function scheduleTaskExpiration({ taskId, deadlineAt }) {
     },
   );
 }
+
+export function schedulePaymentRefund({ paymentId, taskId, reason }) {
+  return taskQueue.add(
+    "refund-payment",
+    {
+      paymentId,
+      taskId,
+      reason,
+    },
+    {
+      jobId: `refund-payment-${paymentId}`,
+    },
+  );
+}

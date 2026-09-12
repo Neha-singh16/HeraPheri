@@ -2,7 +2,7 @@ import sequelize from "../config/database.js";
 import { createNotification } from "./notificationService.js";
 import { emitNotificationToUser } from "../socket/index.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
-
+import { Payment } from "../models/index.js";
 
 import {
   Task,
@@ -324,4 +324,97 @@ export async function getMyAssignedTasks({ executorId, status }) {
   });
 
   return assignments;
+}
+
+// If an Executor accepts something and decides:
+// "I can't do this."
+// they need a controlled way to release it.
+export async function releaseTask({ taskId, executorId }) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const task = await Task.findOne({
+      where: {
+        id: taskId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!task) {
+      throw new Error("Task not found.");
+    }
+
+    if (task.status !== "ASSIGNED") {
+      throw new Error("Only assigned tasks can be released.");
+    }
+
+    const assignment = await TaskAssignment.findOne({
+      where: {
+        task_id: taskId,
+        executor_id: executorId,
+        status: "ACTIVE",
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!assignment) {
+      throw new Error("You are not the assigned Executor.");
+    }
+
+    const payment = await Payment.findOne({
+      where: {
+        task_id: taskId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    /*
+      Do NOT allow release once requester has funded.
+      Money has entered the financial lifecycle.
+    */
+    if (payment && ["HELD", "RELEASED"].includes(payment.status)) {
+      throw new Error("A funded task cannot be released by the Executor.");
+    }
+
+    await assignment.update(
+      {
+        status: "RELEASED",
+        released_at: new Date(),
+      },
+      { transaction },
+    );
+
+    await task.update(
+      {
+        status: "OPEN",
+      },
+      { transaction },
+    );
+
+    await createTaskEvent({
+      taskId,
+      actorUserId: executorId,
+      eventType: "TASK_RELEASED",
+      metadata: {
+        assignmentId: assignment.id,
+      },
+      transaction,
+    });
+
+    await transaction.commit();
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id, executorId],
+      reason: "TASK_RELEASED",
+    });
+
+    return task;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }

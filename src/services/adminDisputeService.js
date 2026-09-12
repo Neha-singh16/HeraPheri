@@ -1,10 +1,8 @@
 import { Op } from "sequelize";
 
 import sequelize from "../config/database.js";
-import razorpay from "../config/razorpay.js";
 import {
   Dispute,
-  LedgerEntry,
   Payment,
   Task,
   TaskAssignment,
@@ -17,7 +15,11 @@ import {
   emitTaskNotifications,
 } from "./taskNotificationService.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
-import { releasePaymentForTask } from "./paymentService.js";
+import {
+  releasePaymentForTask,
+  requestRefundForTask,
+} from "./paymentService.js";
+import { schedulePaymentRefund } from "./taskJobService.js";
 
 const disputeIncludes = [
   {
@@ -65,6 +67,7 @@ export async function resolveAdminDispute({
   resolutionNote = null,
 }) {
   const transaction = await sequelize.transaction();
+  let refundRequest = null;
 
   try {
     const dispute = await Dispute.findByPk(disputeId, {
@@ -82,7 +85,9 @@ export async function resolveAdminDispute({
     }
 
     if (!["REFUND_REQUESTER", "RELEASE_EXECUTOR"].includes(resolution)) {
-      throw new Error("Resolution must refund the requester or release the Executor.");
+      throw new Error(
+        "Resolution must refund the requester or release the Executor.",
+      );
     }
 
     const task = await Task.findByPk(dispute.task_id, {
@@ -106,56 +111,32 @@ export async function resolveAdminDispute({
     });
 
     if (!assignment || !payment) {
-      throw new Error("The disputed task is missing its assignment or payment.");
+      throw new Error(
+        "The disputed task is missing its assignment or payment.",
+      );
     }
 
     if (resolution === "REFUND_REQUESTER") {
       if (payment.status === "HELD") {
-        if (!payment.provider_payment_id) {
-          throw new Error("The held payment has no provider payment ID.");
-        }
-
-        await razorpay.payments.refund(payment.provider_payment_id, {
-          amount: Math.round(Number(payment.gross_amount) * 100),
+        refundRequest = await requestRefundForTask({
+          taskId: task.id,
+          transaction,
         });
-
-        await payment.update(
-          {
-            status: "REFUNDED",
-            refunded_at: new Date(),
-          },
-          { transaction },
-        );
-
-        await LedgerEntry.create(
-          {
-            user_id: payment.requester_id,
-            task_id: task.id,
-            payment_id: payment.id,
-            entry_type: "REFUND",
-            amount: payment.gross_amount,
-            direction: "CREDIT",
-            reference: `DISPUTE_REFUND:${dispute.id}`,
-          },
-          { transaction },
-        );
-      } else if (payment.status !== "REFUNDED") {
+      } else if (
+        !["REFUND_REQUESTED", "REFUNDED"].includes(payment.status)
+      ) {
         throw new Error("Only held payments can be refunded.");
       }
 
       await task.update({ status: "CANCELLED" }, { transaction });
       await assignment.update({ status: "CANCELLED" }, { transaction });
 
-      await createTaskEvent({
-        taskId: task.id,
-        actorUserId: adminId,
-        eventType: "PAYMENT_REFUNDED",
-        metadata: { disputeId: dispute.id },
-        transaction,
-      });
     } else {
       if (payment.status === "HELD") {
-        await releasePaymentForTask({ taskId: task.id, transaction });
+        await releasePaymentForTask({
+          taskId: task.id,
+          transaction,
+        });
       } else if (payment.status !== "RELEASED") {
         throw new Error("Only held payments can be released.");
       }
@@ -192,13 +173,25 @@ export async function resolveAdminDispute({
       title: "Dispute resolved",
       message:
         resolution === "REFUND_REQUESTER"
-          ? "The dispute was resolved with a requester refund."
+          ? "The dispute was resolved and a requester refund was requested."
           : "The dispute was resolved with payment released to the Executor.",
       data: { disputeId: dispute.id, resolution },
       transaction,
     });
 
     await transaction.commit();
+
+    if (refundRequest) {
+      try {
+        await schedulePaymentRefund({
+          paymentId: refundRequest.id,
+          taskId: refundRequest.task_id,
+          reason: `DISPUTE_REFUND:${dispute.id}`,
+        });
+      } catch (queueError) {
+        console.error("Refund job scheduling failed:", queueError);
+      }
+    }
 
     emitTaskUpdated({
       taskId: task.id,

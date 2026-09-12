@@ -2,13 +2,12 @@ import { Worker } from "bullmq";
 
 import sequelize from "../config/database.js";
 
-import {
-  Task,
-  TaskAssignment,
-} from "../models/index.js";
+import { Task, TaskAssignment } from "../models/index.js";
 
 import { createTaskEvent } from "../services/taskEventService.js";
 import { createNotification } from "../services/notificationService.js";
+import { emitTaskUpdated } from "../socket/taskEvents.js";
+import { processRefundForTask } from "../services/paymentService.js";
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
@@ -22,6 +21,12 @@ const worker = new Worker(
 
       case "expire-task":
         return expireTask(job.data.taskId);
+
+      case "refund-payment":
+        return processRefundForTask({
+          taskId: job.data.taskId,
+          reason: job.data.reason,
+        });
 
       default:
         throw new Error(`Unknown task job: ${job.name}`);
@@ -95,23 +100,12 @@ async function expireTask(taskId) {
       };
     }
 
-    /*
-      Only OPEN tasks should expire.
-
-      If an Executor already accepted it,
-      the job must not overwrite ASSIGNED.
-    */
-    if (
-      !["OPEN", "ASSIGNED", "IN_PROGRESS", "PENDING_APPROVAL"].includes(
-        task.status,
-      )
-    ) {
+    if (task.status !== "OPEN") {
       await transaction.commit();
 
       return {
         skipped: true,
-
-        reason: `Task is already ${task.status}.`,
+        reason: `Task is ${task.status}; only OPEN tasks expire automatically.`,
       };
     }
 
@@ -125,44 +119,22 @@ async function expireTask(taskId) {
       },
     );
 
-    const assignment = await TaskAssignment.findOne({
-      where: {
-        task_id: task.id,
-        status: "ACTIVE",
-      },
-      transaction,
-      lock: transaction.LOCK.UPDATE,
-    });
-
-    if (assignment) {
-      await assignment.update(
-        {
-          status: "CANCELLED",
-          released_at: new Date(),
-        },
-        { transaction },
-      );
-    }
-
     await createTaskEvent({
       taskId: task.id,
-
       actorUserId: task.requester_id,
-
       eventType: "TASK_EXPIRED",
-
       metadata: {
         deadlineAt: task.deadline_at,
       },
-
       transaction,
     });
 
-    await createNotification({
+    const notification =
+      await createNotification({
       userId: task.requester_id,
       type: "TASK_EXPIRED",
       title: "Task expired",
-      message: `Your task "${task.title}" expired at its deadline.`,
+      message: `Your task "${task.title}" expired because the deadline passed.`,
       data: {
         taskId: task.id,
         deadlineAt: task.deadline_at,
@@ -170,21 +142,13 @@ async function expireTask(taskId) {
       transaction,
     });
 
-    if (assignment) {
-      await createNotification({
-        userId: assignment.executor_id,
-        type: "TASK_EXPIRED",
-        title: "Assigned task expired",
-        message: `The deadline for "${task.title}" has passed, so the task expired.`,
-        data: {
-          taskId: task.id,
-          deadlineAt: task.deadline_at,
-        },
-        transaction,
-      });
-    }
-
     await transaction.commit();
+
+    emitTaskUpdated({
+      taskId,
+      userIds: [task.requester_id],
+      reason: "TASK_EXPIRED",
+    });
 
     console.log(`⏰ Task expired: ${task.id}`);
 

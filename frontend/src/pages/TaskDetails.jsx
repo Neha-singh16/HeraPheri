@@ -89,9 +89,11 @@ export default function TaskDetails() {
     };
   }, [socket, taskId]);
 
-  async function cancelTask() {
+  async function handleCancel() {
     const confirmed = window.confirm(
-      "Are you sure you want to cancel this task?",
+      task.payment?.status === "HELD"
+        ? "This task is funded. Cancelling will refund the requester. Continue?"
+        : "Cancel this task?",
     );
 
     if (!confirmed) {
@@ -107,6 +109,31 @@ export default function TaskDetails() {
       await fetchTask();
     } catch (error) {
       setError(error.response?.data?.message || "Unable to cancel task.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleRelease() {
+    const confirmed = window.confirm(
+      "Release this task back to the marketplace?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setActionLoading(true);
+    setError("");
+
+    try {
+      await api.post(`/task-assignments/${taskId}/release`);
+
+      await fetchTask();
+    } catch (error) {
+      setError(
+        error.response?.data?.message || "Unable to release task.",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -266,18 +293,18 @@ export default function TaskDetails() {
               REQUESTER: cancel OPEN task
           ------------------------------------------- */}
 
-          {isRequester && task.status === "OPEN" && (
+          {isRequester && ["OPEN", "ASSIGNED"].includes(task.status) && (
             <div className="danger-zone">
               <h3>Cancel task</h3>
 
-              <p>You can cancel this task while it is still open.</p>
+              <p>You can cancel this task before work begins.</p>
 
               <button
                 className="danger-button"
-                onClick={cancelTask}
+                onClick={handleCancel}
                 disabled={actionLoading}
               >
-                {actionLoading ? "Cancelling..." : "Cancel task"}
+                {actionLoading ? "Cancelling..." : "Cancel Task"}
               </button>
             </div>
           )}
@@ -381,6 +408,14 @@ export default function TaskDetails() {
                       funds the task.
                     </p>
                   </div>
+
+                  <button
+                    className="secondary-button"
+                    onClick={handleRelease}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Releasing..." : "Release Task"}
+                  </button>
                 </>
               )}
             </div>

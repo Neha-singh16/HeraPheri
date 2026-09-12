@@ -1,10 +1,16 @@
 import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 
-import { Task, Payment } from "../models/index.js";
+import { Task, Payment, TaskAssignment } from "../models/index.js";
+import { emitTaskUpdated } from "../socket/taskEvents.js";
+
+import { requestRefundForTask } from "./paymentService.js";
 
 import { createTaskEvent } from "./taskEventService.js";
-import { scheduleTaskExpiration } from "./taskJobService.js";
+import {
+  schedulePaymentRefund,
+  scheduleTaskExpiration,
+} from "./taskJobService.js";
 
 const VALID_CATEGORIES = ["GO", "GET", "CHECK", "DIGITAL"];
 const VALID_MODES = ["PHYSICAL", "DIGITAL", "HYBRID"];
@@ -318,6 +324,7 @@ export async function updateTask({ taskId, requesterId, updates }) {
 // Cancel an open task.
 export async function cancelTask({ taskId, requesterId }) {
   const transaction = await sequelize.transaction();
+  let refundRequest = null;
 
   try {
     const task = await Task.findOne({
@@ -333,30 +340,143 @@ export async function cancelTask({ taskId, requesterId }) {
       throw new Error("Task not found or access denied.");
     }
 
-    if (!["OPEN"].includes(task.status)) {
-      throw new Error("Only open tasks can be cancelled in V1.");
+    if (!["OPEN", "ASSIGNED"].includes(task.status)) {
+      throw new Error("This task can no longer be cancelled by the requester.");
     }
 
-    await task.update(
-      {
-        status: "CANCELLED",
-      },
-      {
-        transaction,
-      },
-    );
-
-    await createTaskEvent({
-      taskId: task.id,
-      actorUserId: requesterId,
-      eventType: "TASK_CANCELLED",
-      metadata: {
-        reason: "Requester cancelled",
+    const assignment = await TaskAssignment.findOne({
+      where: {
+        task_id: task.id,
+        status: "ACTIVE",
       },
       transaction,
+      lock: transaction.LOCK.UPDATE,
     });
 
+    let payment = null;
+
+    if (assignment) {
+      payment = await Payment.findOne({
+        where: {
+          task_id: task.id,
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+    }
+
+    /*
+      OPEN:
+      No Executor yet → simply cancel.
+    */
+    if (task.status === "OPEN") {
+      await task.update(
+        {
+          status: "CANCELLED",
+        },
+        { transaction },
+      );
+
+      await createTaskEvent({
+        taskId: task.id,
+        actorUserId: requesterId,
+        eventType: "TASK_CANCELLED",
+        metadata: {
+          reason: "Requester cancelled open task.",
+        },
+        transaction,
+      });
+    }
+
+    /*
+      ASSIGNED + unpaid:
+      Cancel assignment and task.
+    */
+    if (
+      task.status === "ASSIGNED" &&
+      (!payment || ["PENDING", "FAILED"].includes(payment.status))
+    ) {
+      await task.update(
+        {
+          status: "CANCELLED",
+        },
+        { transaction },
+      );
+
+      if (assignment) {
+        await assignment.update(
+          {
+            status: "CANCELLED",
+            released_at: new Date(),
+          },
+          { transaction },
+        );
+      }
+
+      await createTaskEvent({
+        taskId: task.id,
+        actorUserId: requesterId,
+        eventType: "TASK_CANCELLED",
+        metadata: {
+          reason: "Requester cancelled before funding.",
+        },
+        transaction,
+      });
+    }
+
+    /*
+      ASSIGNED + HELD:
+      Refund first, then cancel.
+    */
+    if (task.status === "ASSIGNED" && payment?.status === "HELD") {
+      refundRequest = await requestRefundForTask({
+        taskId: task.id,
+        transaction,
+      });
+
+      await task.update(
+        {
+          status: "CANCELLED",
+        },
+        { transaction },
+      );
+
+      if (assignment) {
+        await assignment.update(
+          {
+            status: "CANCELLED",
+            released_at: new Date(),
+          },
+          { transaction },
+        );
+      }
+
+    }
+
     await transaction.commit();
+
+    if (refundRequest) {
+      try {
+        await schedulePaymentRefund({
+          paymentId: refundRequest.id,
+          taskId: refundRequest.task_id,
+          reason: "REQUESTER_CANCEL_REFUND",
+        });
+      } catch (queueError) {
+        console.error("Refund job scheduling failed:", queueError);
+      }
+    }
+
+    /*
+      Realtime after successful commit.
+    */
+    const executorId = assignment?.executor_id;
+
+    emitTaskUpdated({
+      taskId: task.id,
+      userIds: [requesterId, executorId].filter(Boolean),
+      reason: "TASK_CANCELLED",
+    });
 
     return task;
   } catch (error) {

@@ -81,6 +81,7 @@ export async function processPaymentWebhook({
         // Never move a released payment backwards.
         if (
           payment.status !== "RELEASED" &&
+          payment.status !== "REFUND_REQUESTED" &&
           payment.status !== "REFUNDED"
         ) {
           await payment.update(
