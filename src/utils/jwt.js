@@ -5,6 +5,7 @@ export function generateAccessToken(user) {
   return jwt.sign(
     {
       sub: user.id,
+       role: user.role,
       type: "access",
     },
     process.env.JWT_ACCESS_SECRET,

@@ -78,8 +78,31 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // LOGOUT
+  async function loginWithGoogle(idToken) {
+    setLoading(true);
 
+    try {
+      const response = await api.post("/auth/google", {
+        idToken,
+      });
+
+      const { user, accessToken, refreshToken } = response.data.data;
+
+      localStorage.setItem("accessToken", accessToken);
+
+      localStorage.setItem("refreshToken", refreshToken);
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      setUser(user);
+
+      return response.data;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // LOGOUT
   async function logout() {
     const refreshToken = localStorage.getItem("refreshToken");
 
@@ -119,6 +142,7 @@ export function AuthProvider({ children }) {
         isAuthenticated,
         login,
         register,
+        loginWithGoogle,
         logout,
       }}
     >

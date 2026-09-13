@@ -1,50 +1,32 @@
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
-import {
-  Link,
-  useNavigate,
-} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-import {
-  useAuth,
-} from "../context/AuthContext.jsx";
-
+import { useAuth } from "../context/AuthContext.jsx";
+import GoogleSignInButton from "../components/GoogleSignInButton.jsx";
 
 export default function Register() {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const {
-    register,
-    loading,
-  } = useAuth();
+  const { register, loginWithGoogle, loading } = useAuth();
 
-  const [form, setForm] =
-    useState({
-      name: "",
-      email: "",
-      phone: "",
-      password: "",
-    });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
 
-  const [error, setError] =
-    useState("");
-
+  const [error, setError] = useState("");
 
   function handleChange(event) {
     setForm({
       ...form,
-      [event.target.name]:
-        event.target.value,
+      [event.target.name]: event.target.value,
     });
   }
 
-
-  async function handleSubmit(
-    event
-  ) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     setError("");
@@ -52,137 +34,106 @@ export default function Register() {
     try {
       await register(form);
 
-      navigate(
-        "/dashboard"
-      );
-
+      navigate("/dashboard");
     } catch (error) {
-      setError(
-        error.response?.data
-          ?.message ||
-        "Registration failed."
-      );
+      setError(error.response?.data?.message || "Registration failed.");
     }
   }
 
-
   return (
     <div className="auth-page">
-
       <div className="auth-card">
-
         <div className="brand">
           <span>HERE</span>
           <strong>PHERI</strong>
         </div>
 
-        <h1>
-          Create your account
-        </h1>
+        <h1>Create your account</h1>
 
-        <p className="subtitle">
-          One account.
-          Request tasks or execute them.
-        </p>
+        <p className="subtitle">One account. Request tasks or execute them.</p>
 
+        {error && <div className="error-message">{error}</div>}
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-
-        <form
-          onSubmit={handleSubmit}
-        >
-
+        <form onSubmit={handleSubmit}>
           <label>
             Name
-
             <input
               type="text"
               name="name"
               value={form.name}
-              onChange={
-                handleChange
-              }
+              onChange={handleChange}
               placeholder="Your name"
               required
             />
           </label>
 
-
           <label>
             Email
-
             <input
               type="email"
               name="email"
               value={form.email}
-              onChange={
-                handleChange
-              }
+              onChange={handleChange}
               placeholder="you@example.com"
               required
             />
           </label>
 
-
           <label>
             Phone
-
             <input
               type="tel"
               name="phone"
               value={form.phone}
-              onChange={
-                handleChange
-              }
+              onChange={handleChange}
               placeholder="Your phone number"
               required
             />
           </label>
 
-
           <label>
             Password
-
             <input
               type="password"
               name="password"
               value={form.password}
-              onChange={
-                handleChange
-              }
+              onChange={handleChange}
               placeholder="••••••••"
               required
             />
           </label>
 
-
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Creating..."
-              : "Create account"}
+          <button type="submit" disabled={loading}>
+            {loading ? "Creating..." : "Create account"}
           </button>
-
         </form>
 
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <GoogleSignInButton
+          text="signup_with"
+          onCredential={async (response) => {
+            try {
+              setError("");
+
+              await loginWithGoogle(response.credential);
+
+              navigate("/dashboard");
+            } catch (error) {
+              setError(
+                error.response?.data?.message || "Google sign-up failed.",
+              );
+            }
+          }}
+        />
 
         <p className="auth-footer">
-          Already have an account?  
-          <Link to="/login">
-            Sign in
-          </Link>
+          Already have an account?
+          <Link to="/login">Sign in</Link>
         </p>
-
       </div>
-
     </div>
   );
 }
-

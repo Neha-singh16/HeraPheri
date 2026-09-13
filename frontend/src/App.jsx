@@ -25,6 +25,9 @@ import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
 import Earnings from "./pages/Earnings.jsx";
 import AdminDisputes from "./pages/AdminDisputes.jsx";
 import { SocketProvider } from "./context/SocketContext.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
+
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 import { ModeProvider } from "./context/ModeContext.jsx";
 
@@ -143,7 +146,22 @@ function App() {
 
               <Route path="/notifications" element={<Notifications />} />
 
-              <Route path="/admin/disputes" element={<AdminDisputes />} />
+              <Route
+                path="/admin/disputes"
+                element={
+                  <AdminRoute>
+                    <AdminDisputes />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
 
               <Route path="/reputation" element={<Reputation />} />
 

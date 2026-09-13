@@ -3,11 +3,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext.jsx";
+import GoogleSignInButton from "../components/GoogleSignInButton.jsx";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const { login, loading } = useAuth();
+  const { login, loginWithGoogle, loading } = useAuth();
 
   const [form, setForm] = useState({
     email: "",
@@ -80,6 +81,26 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <GoogleSignInButton
+          text="signin_with"
+          onCredential={async (response) => {
+            try {
+              setError("");
+
+              await loginWithGoogle(response.credential);
+
+              navigate("/dashboard");
+            } catch (error) {
+              setError(
+                error.response?.data?.message || "Google sign-in failed.",
+              );
+            }
+          }}
+        />
 
         <p className="auth-footer">
           Don't have an account? <Link to="/register">Create one</Link>

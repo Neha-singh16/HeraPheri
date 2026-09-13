@@ -13,46 +13,36 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-async function fetchUnreadCount() {
-  try {
-    const response =
-      await api.get("/notifications");
+  async function fetchUnreadCount() {
+    try {
+      const response = await api.get("/notifications");
 
-    const unread = (
-      response.data.data || []
-    ).filter(
-      (notification) =>
-        !notification.is_read,
-    ).length;
+      const unread = (response.data.data || []).filter(
+        (notification) => !notification.is_read,
+      ).length;
 
-    setUnreadCount(unread);
-  } catch (error) {
-    console.error(
-      "Unable to fetch notification count:",
-      error,
-    );
-  }
-}
-
- useEffect(() => {
-    fetchUnreadCount();
-
-  function handleNotificationChange() {
-    fetchUnreadCount();
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error("Unable to fetch notification count:", error);
+    }
   }
 
-  window.addEventListener(
-    "notifications:changed",
-    handleNotificationChange,
-  );
+  useEffect(() => {
+    fetchUnreadCount();
 
-  return () => {
-    window.removeEventListener(
-      "notifications:changed",
-      handleNotificationChange,
-    );
-  };
-}, []);
+    function handleNotificationChange() {
+      fetchUnreadCount();
+    }
+
+    window.addEventListener("notifications:changed", handleNotificationChange);
+
+    return () => {
+      window.removeEventListener(
+        "notifications:changed",
+        handleNotificationChange,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
@@ -83,6 +73,7 @@ async function fetchUnreadCount() {
             Disputes
           </Link>
         )}
+        {user?.role === "ADMIN" && <Link to="/admin">Admin</Link>}
 
         <Link
           to="/notifications"
