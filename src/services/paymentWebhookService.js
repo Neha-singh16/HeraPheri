@@ -251,6 +251,65 @@ export async function processPaymentWebhook({ eventId, eventType, payload }) {
       }
     }
 
+    if (
+      eventType === "refund.created" ||
+      eventType === "refund.processed" ||
+      eventType === "refund.failed"
+    ) {
+      const refundEntity = payload?.payload?.refund?.entity;
+
+      const providerRefundId = refundEntity?.id;
+      const providerPaymentId = refundEntity?.payment_id;
+
+      if (!providerRefundId || !providerPaymentId) {
+        throw new Error("Refund webhook is missing refund/payment IDs.");
+      }
+
+      const payment = await Payment.findOne({
+        where: {
+          provider_payment_id: providerPaymentId,
+        },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+
+      if (!payment) {
+        throw new Error("Local payment not found for refund webhook.");
+      }
+
+      if (eventType === "refund.created") {
+        await payment.update(
+          {
+            provider_refund_id: providerRefundId,
+            refund_status: "PENDING",
+          },
+          { transaction },
+        );
+      }
+
+      if (eventType === "refund.processed") {
+        await payment.update(
+          {
+            provider_refund_id: providerRefundId,
+            refund_status: "PROCESSED",
+            status: "REFUNDED",
+            refunded_at: new Date(),
+          },
+          { transaction },
+        );
+      }
+
+      if (eventType === "refund.failed") {
+        await payment.update(
+          {
+            provider_refund_id: providerRefundId,
+            refund_status: "FAILED",
+          },
+          { transaction },
+        );
+      }
+    }
+
     /*
       Non-payment-success events still count as
       successfully received/processed.
