@@ -15,6 +15,7 @@ import {
 const VALID_CATEGORIES = ["GO", "GET", "CHECK", "DIGITAL"];
 const VALID_MODES = ["PHYSICAL", "DIGITAL", "HYBRID"];
 
+
 export async function createTask({
   requesterId,
   category,
@@ -90,7 +91,7 @@ export async function createTask({
         requester_id: requesterId,
         category,
         // task_mode: taskMode,
-        title: taskMode,
+        // title: taskMode,
         title: title.trim(),
         description: description.trim(),
         // Sequelize accepts a GeoJSON Point for the POINT column.
@@ -155,13 +156,26 @@ export async function getMyTasks({
   status,
   category,
 }) {
-  const safePage = Math.max((Number(page) || 1, 1));
-  const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-  const offset = (safePage - 1) * safeLimit;
+  const safePage = Math.max(
+    Number(page) || 1,
+    1,
+  );
+
+  const safeLimit = Math.min(
+    Math.max(
+      Number(limit) || 10,
+      1,
+    ),
+    50,
+  );
+
+  const offset =
+    (safePage - 1) * safeLimit;
 
   const where = {
     requester_id: requesterId,
   };
+
   if (status) {
     where.status = status;
   }
@@ -170,67 +184,123 @@ export async function getMyTasks({
     where.category = category;
   }
 
-  const result = await Task.findAndCountAll({
-    where,
-    order: [["created_at", "DESC"]],
-    limit: safeLimit,
-    offset,
-  });
+  const [
+    result,
+    openCount,
+    activeCount,
+    completedCount,
+  ] = await Promise.all([
+    Task.findAndCountAll({
+      where,
+      order: [
+        ["created_at", "DESC"],
+      ],
+      limit: safeLimit,
+      offset,
+    }),
+
+    Task.count({
+      where: {
+        requester_id:
+          requesterId,
+        status: "OPEN",
+      },
+    }),
+
+    Task.count({
+      where: {
+        requester_id:
+          requesterId,
+        status: {
+          [Op.in]: [
+            "ASSIGNED",
+            "IN_PROGRESS",
+            "PENDING_APPROVAL",
+          ],
+        },
+      },
+    }),
+
+    Task.count({
+      where: {
+        requester_id:
+          requesterId,
+        status: "COMPLETED",
+      },
+    }),
+  ]);
 
   return {
     tasks: result.rows,
+
+    summary: {
+      open: openCount,
+      active: activeCount,
+      completed: completedCount,
+    },
+
     pagination: {
       page: safePage,
       limit: safeLimit,
       total: result.count,
-      totalPages: Math.ceil(result.count / safeLimit),
+      totalPages: Math.ceil(
+        result.count / safeLimit,
+      ),
     },
   };
 }
+
 
 // Get one task.
 export async function getTaskById({
   taskId,
   userId,
 }) {
-  const task = await Task.findByPk(taskId, {
-    include: [
-      {
-        model: Payment,
-        as: "payment",
-
-        attributes: [
-          "id",
-          "gross_amount",
-          "platform_fee",
-          "executor_amount",
-          "currency",
-          "status",
-          "paid_at",
-          "released_at",
-        ],
-      },
-    ],
-  });
+  const task = await Task.findByPk(
+    taskId,
+    {
+      include: [
+        {
+          model: Payment,
+          as: "payment",
+          attributes: [
+            "id",
+            "gross_amount",
+            "platform_fee",
+            "executor_amount",
+            "currency",
+            "status",
+            "paid_at",
+            "released_at",
+          ],
+        },
+      ],
+    },
+  );
 
   if (!task) {
-    throw new Error("Task not found.");
+    throw new Error(
+      "Task not found.",
+    );
   }
 
   /*
-    Authorization:
-    A task is visible only to:
-    1. The requester who created it
-    2. The Executor currently assigned to it
+    Requester can view their own task.
   */
-
-  const isRequester =
-    task.requester_id === userId;
-
-  if (isRequester) {
+  if (
+    task.requester_id === userId
+  ) {
     return task;
   }
 
+  /*
+    Executor can view a task if they have
+    an assignment on it.
+
+    We include historical assignment
+    states so completed/cancelled/released
+    tasks remain accessible to participants.
+  */
   const assignment =
     await TaskAssignment.findOne({
       where: {
@@ -241,14 +311,13 @@ export async function getTaskById({
             "ACTIVE",
             "COMPLETED",
             "RELEASED",
+            "CANCELLED",
           ],
         },
       },
     });
 
-  const isExecutor = Boolean(assignment);
-
-  if (!isExecutor) {
+  if (!assignment) {
     throw new Error(
       "You are not authorized to view this task.",
     );
@@ -256,7 +325,6 @@ export async function getTaskById({
 
   return task;
 }
-
 export async function updateTask({ taskId, requesterId, updates }) {
   const transaction = await sequelize.transaction();
   try {

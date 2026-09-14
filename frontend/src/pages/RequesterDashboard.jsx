@@ -14,6 +14,11 @@ export default function RequesterDashboard() {
   const { hasExecutorProfile, capabilityLoading } = useMode();
   const { socket } = useSocket();
 
+  const [summary, setSummary] = useState({
+    open: 0,
+    active: 0,
+    completed: 0,
+  });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,8 +30,17 @@ export default function RequesterDashboard() {
           limit: 5,
         },
       });
+      const data = response.data.data || {};
 
-      setTasks(response.data.data?.tasks || []);
+      setTasks(data.tasks || []);
+
+      setSummary(
+        data.summary || {
+          open: 0,
+          active: 0,
+          completed: 0,
+        },
+      );
     } catch (error) {
       console.error("Requester dashboard error:", error);
     } finally {
@@ -38,9 +52,6 @@ export default function RequesterDashboard() {
     fetchTasks();
   }, []);
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
   useEffect(() => {
     if (!socket) {
       return;
@@ -57,18 +68,18 @@ export default function RequesterDashboard() {
     };
   }, [socket]);
 
-  const openTasks = tasks.filter((task) => task.status === "OPEN").length;
+  // const openTasks = tasks.filter((task) => task.status === "OPEN").length;
 
-  const activeTasks = tasks.filter(
-    (task) =>
-      task.status === "ASSIGNED" ||
-      task.status === "IN_PROGRESS" ||
-      task.status === "PENDING_APPROVAL",
-  ).length;
+  // const activeTasks = tasks.filter(
+  //   (task) =>
+  //     task.status === "ASSIGNED" ||
+  //     task.status === "IN_PROGRESS" ||
+  //     task.status === "PENDING_APPROVAL",
+  // ).length;
 
-  const completedTasks = tasks.filter(
-    (task) => task.status === "COMPLETED",
-  ).length;
+  // const completedTasks = tasks.filter(
+  //   (task) => task.status === "COMPLETED",
+  // ).length;
 
   return (
     <div className="mode-dashboard">
@@ -110,7 +121,7 @@ export default function RequesterDashboard() {
         <div className="stat-card">
           <span>Open</span>
 
-          <strong>{loading ? "—" : openTasks}</strong>
+          <strong>{loading ? "—" : summary.open}</strong>
 
           <small>Waiting for an Executor</small>
         </div>
@@ -118,7 +129,10 @@ export default function RequesterDashboard() {
         <div className="stat-card">
           <span>Active</span>
 
-          <strong>{loading ? "—" : activeTasks}</strong>
+          {/* <strong>{loading ? "—" : activeTasks}</strong> */}
+          <strong>
+  {summary.active}
+</strong>
 
           <small>Currently being handled</small>
         </div>
@@ -126,7 +140,10 @@ export default function RequesterDashboard() {
         <div className="stat-card">
           <span>Completed</span>
 
-          <strong>{loading ? "—" : completedTasks}</strong>
+          {/* <strong>{loading ? "—" : completedTasks}</strong> */}
+          <strong>
+  {summary.completed}
+</strong>
 
           <small>Successfully finished</small>
         </div>
