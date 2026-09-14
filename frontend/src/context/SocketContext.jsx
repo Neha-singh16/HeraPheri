@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { io } from "socket.io-client";
-
 import Toast from "../components/Toast.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
@@ -14,15 +13,19 @@ const SOCKET_URL =
 
 const TASK_EVENT_MESSAGES = {
   TASK_ASSIGNED: "Your task has been accepted.",
-  PAYMENT_HELD: "Task payment secured.",
-  TASK_STARTED: "Executor started the task.",
-  PROOF_SUBMITTED: "Work submitted for review.",
-  TASK_APPROVED: "Task completed. Payment released.",
+  PAYMENT_HELD: "Task payment has been secured.",
+  TASK_STARTED: "The task has started.",
+  PROOF_SUBMITTED: "Work has been submitted for review.",
+  TASK_APPROVED: "Task completed and payment released.",
+  TASK_DISPUTED: "A dispute has been raised for this task.",
+  TASK_CANCELLED: "This task has been cancelled.",
+  TASK_RELEASED: "The Executor released the task.",
+  TASK_EXPIRED: "This task has expired.",
 };
 
 export function SocketProvider({ children }) {
   const { user } = useAuth();
-
+  const [connected, setConnected] = useState(false);
   const [socket, setSocket] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -42,9 +45,13 @@ export function SocketProvider({ children }) {
     });
 
     connection.on("connect", () => {
+      setConnected(true);
       console.log("🔌 HEREPHERI realtime connected");
     });
 
+    connection.on("disconnect", () => {
+      setConnected(false);
+    });
     connection.on("disconnect", (reason) => {
       console.log("🔌 HEREPHERI realtime disconnected:", reason);
     });
@@ -62,7 +69,6 @@ export function SocketProvider({ children }) {
     }
 
     connection.on("task:updated", handleTaskUpdated);
-
     setSocket(connection);
 
     return () => {
@@ -73,12 +79,14 @@ export function SocketProvider({ children }) {
   }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        connected,
+      }}
+    >
       {children}
-      <Toast
-        message={toastMessage}
-        onClose={() => setToastMessage("")}
-      />
+      <Toast message={toastMessage} onClose={() => setToastMessage("")} />
     </SocketContext.Provider>
   );
 }

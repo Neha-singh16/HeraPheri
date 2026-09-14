@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
 import { DashboardSkeleton } from "../components/Skeleton.jsx";
+import { useSocket } from "../context/SocketContext.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
 import { useMode } from "../context/ModeContext.jsx";
@@ -11,6 +12,7 @@ export default function RequesterDashboard() {
   const { user } = useAuth();
 
   const { hasExecutorProfile, capabilityLoading } = useMode();
+  const { socket } = useSocket();
 
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,21 @@ export default function RequesterDashboard() {
   if (loading) {
     return <DashboardSkeleton />;
   }
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    function handleTaskUpdated() {
+      fetchTasks();
+    }
+
+    socket.on("task:updated", handleTaskUpdated);
+
+    return () => {
+      socket.off("task:updated", handleTaskUpdated);
+    };
+  }, [socket]);
 
   const openTasks = tasks.filter((task) => task.status === "OPEN").length;
 

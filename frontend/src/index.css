@@ -1829,8 +1829,6 @@ button:disabled {
   }
 }
 
-
-
 /* =========================================
    ROLE DASHBOARDS
 ========================================= */
@@ -1840,7 +1838,6 @@ button:disabled {
 
   margin: 0 auto;
 }
-
 
 .dashboard-welcome {
   display: flex;
@@ -1853,26 +1850,17 @@ button:disabled {
   margin-bottom: 34px;
 }
 
-
 .dashboard-welcome h1 {
-  margin:
-    8px 0 10px;
+  margin: 8px 0 10px;
 
   max-width: 700px;
 
-  font-size:
-    clamp(
-      2.1rem,
-      4vw,
-      4rem
-    );
+  font-size: clamp(2.1rem, 4vw, 4rem);
 
   line-height: 1;
 
-  letter-spacing:
-    -0.055em;
+  letter-spacing: -0.055em;
 }
-
 
 .dashboard-welcome p:not(.eyebrow) {
   margin: 0;
@@ -1882,7 +1870,6 @@ button:disabled {
   line-height: 1.6;
 }
 
-
 .text-link {
   color: #17202a;
 
@@ -1890,7 +1877,6 @@ button:disabled {
 
   font-weight: 700;
 }
-
 
 /* =========================================
    MODE SWITCHER
@@ -1906,10 +1892,8 @@ button:disabled {
   border-radius: 10px;
 }
 
-
 .mode-button {
-  padding:
-    7px 13px;
+  padding: 7px 13px;
 
   background: transparent;
 
@@ -1920,17 +1904,13 @@ button:disabled {
   font-size: 0.78rem;
 }
 
-
 .mode-button.active {
   background: white;
 
   color: #17202a;
 
-  box-shadow:
-    0 2px 6px
-    rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
-
 
 /* =========================================
    EXECUTOR
@@ -1950,18 +1930,14 @@ button:disabled {
 
   background: white;
 
-  border:
-    1px solid #e8ecef;
+  border: 1px solid #e8ecef;
 
   border-radius: 20px;
 }
 
-
 .executor-setup-card h2 {
-  margin:
-    6px 0 8px;
+  margin: 6px 0 8px;
 }
-
 
 .executor-setup-card p:not(.eyebrow) {
   max-width: 650px;
@@ -1972,7 +1948,6 @@ button:disabled {
 
   line-height: 1.6;
 }
-
 
 .executor-status-card {
   display: grid;
@@ -1991,21 +1966,16 @@ button:disabled {
 
   background: white;
 
-  border:
-    1px solid #e8ecef;
+  border: 1px solid #e8ecef;
 
   border-radius: 20px;
 }
 
-
 .executor-status-card > div {
-  padding:
-    0 18px;
+  padding: 0 18px;
 
-  border-right:
-    1px solid #edf0f2;
+  border-right: 1px solid #edf0f2;
 }
-
 
 .executor-status-card span {
   display: block;
@@ -2017,14 +1987,11 @@ button:disabled {
   font-size: 0.8rem;
 }
 
-
 .executor-status-card strong {
   font-size: 1.3rem;
 }
 
-
 @media (max-width: 850px) {
-
   .dashboard-welcome {
     align-items: flex-start;
 
@@ -2032,15 +1999,11 @@ button:disabled {
   }
 
   .executor-status-card {
-    grid-template-columns:
-      repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
-
 }
 
-
 @media (max-width: 600px) {
-
   .mode-switcher {
     display: none;
   }
@@ -2058,9 +2021,7 @@ button:disabled {
   .executor-status-card > div {
     border-right: none;
   }
-
 }
-
 
 /* =========================================================
    ADMIN CONSOLE
@@ -2174,8 +2135,7 @@ button:disabled {
 .admin-stat-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 18px;
 
@@ -2196,8 +2156,7 @@ button:disabled {
   border: 1px solid #e7ebee;
   border-radius: 20px;
 
-  box-shadow:
-    0 8px 24px rgba(23, 32, 42, 0.03);
+  box-shadow: 0 8px 24px rgba(23, 32, 42, 0.03);
 }
 
 .admin-stat-card span {
@@ -2224,8 +2183,7 @@ button:disabled {
 .admin-action-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 18px;
 }
@@ -2244,8 +2202,7 @@ button:disabled {
 
   text-decoration: none;
 
-  border:
-    1px solid #e7ebee;
+  border: 1px solid #e7ebee;
 
   border-radius: 20px;
 
@@ -2260,8 +2217,7 @@ button:disabled {
 
   border-color: #d6dce1;
 
-  box-shadow:
-    0 18px 45px rgba(23, 32, 42, 0.08);
+  box-shadow: 0 18px 45px rgba(23, 32, 42, 0.08);
 }
 
 .admin-action-icon {
@@ -2309,8 +2265,7 @@ button:disabled {
 
   padding-top: 16px;
 
-  border-top:
-    1px solid #edf0f2;
+  border-top: 1px solid #edf0f2;
 
   font-size: 0.9rem;
 }
@@ -2322,8 +2277,7 @@ button:disabled {
 .admin-summary-row {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 18px;
 
@@ -2391,8 +2345,7 @@ button:disabled {
 
   padding: 13px 14px;
 
-  border:
-    1px solid #d8dde2;
+  border: 1px solid #d8dde2;
 
   border-radius: 12px;
 
@@ -2428,8 +2381,7 @@ button:disabled {
 
   background: #fafbfc;
 
-  border-bottom:
-    1px solid #e7ebee;
+  border-bottom: 1px solid #e7ebee;
 
   color: #7b858f;
 
@@ -2445,8 +2397,7 @@ button:disabled {
 .admin-table td {
   padding: 17px 18px;
 
-  border-bottom:
-    1px solid #edf0f2;
+  border-bottom: 1px solid #edf0f2;
 
   color: #4f5963;
 
@@ -2520,13 +2471,11 @@ button:disabled {
 @media (max-width: 1000px) {
   .admin-stat-grid,
   .admin-action-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .admin-summary-row {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2610,7 +2559,7 @@ button:disabled {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255,255,255,0.6),
+    rgba(255, 255, 255, 0.6),
     transparent
   );
 
@@ -2651,8 +2600,7 @@ button:disabled {
 .skeleton-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 18px;
 
@@ -2725,4 +2673,77 @@ button:disabled {
   margin: 0 0 18px;
 
   color: #737d87;
+}
+
+.realtime-warning {
+  position: fixed;
+
+  bottom: 20px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 9px 14px;
+
+  background: #fff8e8;
+
+  border: 1px solid #eed59a;
+
+  border-radius: 999px;
+
+  color: #805f12;
+
+  font-size: 0.78rem;
+
+  font-weight: 700;
+
+  box-shadow: 0 8px 24px rgba(23, 32, 42, 0.1);
+}
+
+.realtime-warning span {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #bd8617;
+}
+
+
+.table-loading-row {
+  display: grid;
+
+  grid-template-columns:
+    1.4fr 1fr 1fr;
+
+  gap: 20px;
+}
+
+.table-loading-row span {
+  height: 14px;
+
+  border-radius: 8px;
+
+  background: #e9edf0;
+
+  animation:
+    table-pulse 1.3s infinite
+    alternate;
+}
+
+@keyframes table-pulse {
+  from {
+    opacity: 0.45;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

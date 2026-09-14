@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
 import { DashboardSkeleton } from "../components/Skeleton.jsx";
-
+import { useSocket } from "../context/SocketContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function ExecutorDashboard() {
   const { user } = useAuth();
-
+  const { socket } = useSocket();
   const [profile, setProfile] = useState(null);
 
   const [assignments, setAssignments] = useState([]);
@@ -20,35 +20,52 @@ export default function ExecutorDashboard() {
     setLoading(true);
 
     try {
-      const [profileResponse, assignmentResponse] = await Promise.all([
+      const [profileResult, assignmentResult] = await Promise.allSettled([
         api.get("/executor-profile"),
-
         api.get("/task-assignments/mine"),
       ]);
 
-      setProfile(profileResponse.data.data);
-
-      setAssignments(assignmentResponse.data.data || []);
-    } catch (error) {
       /*
-        A missing Executor profile is okay.
-        The dashboard will guide the user
-        to create one.
-      */
-      if (error.response?.status === 404) {
+      Executor profile can legitimately be missing
+      during onboarding. That should NOT wipe out
+      assignment data.
+    */
+      if (profileResult.status === "fulfilled") {
+        setProfile(profileResult.value.data.data);
+      } else if (profileResult.reason?.response?.status === 404) {
         setProfile(null);
       } else {
-        console.error("Executor dashboard error:", error);
+        console.error("Executor profile error:", profileResult.reason);
+      }
+
+      if (assignmentResult.status === "fulfilled") {
+        setAssignments(assignmentResult.value.data.data || []);
+      } else {
+        console.error("Executor assignments error:", assignmentResult.reason);
       }
     } finally {
       setLoading(false);
     }
   }
-
   useEffect(() => {
     fetchDashboard();
   }, []);
 
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    function handleTaskUpdated() {
+      fetchDashboard();
+    }
+
+    socket.on("task:updated", handleTaskUpdated);
+
+    return () => {
+      socket.off("task:updated", handleTaskUpdated);
+    };
+  }, [socket]);
   if (loading) {
     return <DashboardSkeleton />;
   }
