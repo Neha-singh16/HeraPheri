@@ -65,7 +65,22 @@ const Payment = sequelize.define(
       allowNull: false,
       defaultValue: "INR",
     },
+provider_refund_id: {
+  type: DataTypes.STRING(100),
+  allowNull: true,
+  unique: true,
+},
 
+refund_status: {
+  type: DataTypes.ENUM(
+    "NONE",
+    "PENDING",
+    "PROCESSED",
+    "FAILED",
+  ),
+  allowNull: false,
+  defaultValue: "NONE",
+},
     status: {
       type: DataTypes.ENUM(
         "PENDING",

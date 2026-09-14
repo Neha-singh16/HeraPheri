@@ -358,10 +358,19 @@ export async function processRefundForTask({ taskId, reason }) {
     throw new Error("The requested refund has no provider payment ID.");
   }
 
-  await razorpay.payments.refund(payment.provider_payment_id, {
-    amount: Math.round(Number(payment.gross_amount) * 100),
-  });
-
+const refund =
+  await razorpay.payments.refund(
+    payment.provider_payment_id,
+    {
+      amount: Math.round(
+        Number(payment.gross_amount) * 100,
+      ),
+      notes: {
+        taskId,
+        reason: reason || "REFUND",
+      },
+    },
+  );
   const transaction = await sequelize.transaction();
 
   try {
@@ -378,13 +387,16 @@ export async function processRefundForTask({ taskId, reason }) {
       return lockedPayment;
     }
 
-    await lockedPayment.update(
-      {
-        status: "REFUNDED",
-        refunded_at: new Date(),
-      },
-      { transaction },
-    );
+ await lockedPayment.update(
+  {
+    provider_refund_id: refund.id,
+    refund_status:
+      refund.status === "processed"
+        ? "PROCESSED"
+        : "PENDING",
+  },
+  { transaction },
+);
 
     await createLedgerEntryOnce({
       paymentId: lockedPayment.id,
