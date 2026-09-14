@@ -49,6 +49,8 @@ export default function TaskDetails() {
   const [error, setError] = useState("");
 
   const isRequester = task?.requester_id === user?.id;
+  const backPath = isExecutor ? "/find-tasks" : "/tasks";
+  const backLabel = isExecutor ? "Back to Find Tasks" : "Back to My Tasks";
 
   async function fetchTask() {
     setLoading(true);
@@ -171,8 +173,8 @@ export default function TaskDetails() {
 
         <p>{error}</p>
 
-        <button className="secondary-button" onClick={() => navigate("/tasks")}>
-          Back to tasks
+        <button className="secondary-button" onClick={() => navigate(backPath)}>
+          {backLabel}
         </button>
       </div>
     );
@@ -184,8 +186,8 @@ export default function TaskDetails() {
 
   return (
     <div className="page-container">
-      <Link to="/tasks" className="back-link">
-        ← Back to My Tasks
+      <Link to={backPath} className="back-link">
+        ← {backLabel}
       </Link>
 
       {error && <div className="error-message">{error}</div>}
@@ -271,7 +273,7 @@ export default function TaskDetails() {
               EXECUTOR: accept an OPEN task
           ------------------------------------------- */}
 
-          {!isRequester && task.status === "OPEN" && (
+          {isExecutor && !isRequester && task.status === "OPEN" && (
             <div className="detail-section">
               <h2>Want to take this task?</h2>
 

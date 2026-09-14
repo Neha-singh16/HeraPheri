@@ -19,6 +19,7 @@ router.get(
 );
 router.post(
   "/:taskId/release",
+  authenticate,
   releaseTaskController,
 );
 export default router;

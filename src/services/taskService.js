@@ -296,6 +296,12 @@ export async function getTaskById({ taskId, userId }) {
     return task;
   }
 
+  // Open tasks are marketplace listings that Executors must be able to
+  // inspect before accepting them.
+  if (task.status === "OPEN") {
+    return task;
+  }
+
   /*
     Executor can view a task if they have
     an assignment on it.
