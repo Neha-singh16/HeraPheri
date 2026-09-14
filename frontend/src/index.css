@@ -980,6 +980,44 @@ button:disabled {
   background: #b52d2d;
   color: white;
 }
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid #c9e6d3;
+  border-radius: 12px;
+  background: #f2fbf5;
+  color: #205c35;
+  box-shadow: 0 12px 30px rgba(23, 32, 42, 0.16);
+}
+
+.toast span {
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2e8b57;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.toast p {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 @media (max-width: 800px) {
   .task-grid {
     grid-template-columns: 1fr;
@@ -997,6 +1035,11 @@ button:disabled {
   }
 }
 @media (max-width: 520px) {
+  .toast {
+    right: 16px;
+    bottom: 16px;
+  }
+
   .detail-grid {
     grid-template-columns: 1fr;
   }
