@@ -6,9 +6,12 @@ import { useSocket } from "../context/SocketContext.jsx";
 import api from "../api/client.jsx";
 import ModeSwitcher from "./ModeSwitcher.jsx";
 
+import { useMode } from "../context/ModeContext.jsx";
+
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
+  const { isAdmin } = useMode();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -74,7 +77,7 @@ export default function Navbar() {
           </Link>
         )}
         {user?.role === "ADMIN" && <Link to="/admin">Admin</Link>}
-
+{!isAdmin && (
         <Link
           to="/notifications"
           className="notification-button"
@@ -87,6 +90,7 @@ export default function Navbar() {
             </span>
           )}
         </Link>
+)}
 
         <div className="user-menu">
           <button

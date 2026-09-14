@@ -2,9 +2,17 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext.jsx";
 
+import { ModeProvider } from "./context/ModeContext.jsx";
+
+import { SocketProvider } from "./context/SocketContext.jsx";
+
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ModeRoute from "./components/ModeRoute.jsx";
+import MarketplaceRoute from "./components/MarketplaceRoute.jsx";
+import AdminRoute from "./components/AdminRoute.jsx";
+
 import AppLayout from "./components/AppLayout.jsx";
+import AdminLayout from "./components/AdminLayout.jsx";
 
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -23,13 +31,9 @@ import Reputation from "./pages/Reputation.jsx";
 import ExecutorProfile from "./pages/ExecutorProfile.jsx";
 import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
 import Earnings from "./pages/Earnings.jsx";
+
 import AdminDisputes from "./pages/AdminDisputes.jsx";
-import { SocketProvider } from "./context/SocketContext.jsx";
-import AdminRoute from "./components/AdminRoute.jsx";
-
 import AdminDashboard from "./pages/AdminDashboard.jsx";
-
-import { ModeProvider } from "./context/ModeContext.jsx";
 
 function App() {
   return (
@@ -37,22 +41,25 @@ function App() {
       <ModeProvider>
         <SocketProvider>
           <Routes>
-            {/* Public */}
+            {/* PUBLIC */}
+
             <Route path="/login" element={<Login />} />
 
             <Route path="/register" element={<Register />} />
 
-            {/* Protected application */}
+            {/* MARKETPLACE APPLICATION */}
             <Route
               element={
                 <ProtectedRoute>
-                  <AppLayout />
+                  <MarketplaceRoute>
+                    <AppLayout />
+                  </MarketplaceRoute>
                 </ProtectedRoute>
               }
             >
               <Route path="/dashboard" element={<Dashboard />} />
 
-              {/* REQUESTER ONLY */}
+              {/* REQUESTER */}
 
               <Route
                 path="/tasks"
@@ -99,7 +106,7 @@ function App() {
                 }
               />
 
-              {/* EXECUTOR ONLY */}
+              {/* EXECUTOR */}
 
               <Route
                 path="/find-tasks"
@@ -136,45 +143,45 @@ function App() {
                   </ModeRoute>
                 }
               />
-              {/* Shared onboarding / profile page */}
+
+              {/* SHARED MARKETPLACE */}
 
               <Route path="/executor-profile" element={<ExecutorProfile />} />
-
-              {/* Shared */}
 
               <Route path="/tasks/:taskId" element={<TaskDetails />} />
 
               <Route path="/notifications" element={<Notifications />} />
 
-              <Route
-                path="/admin/disputes"
-                element={
-                  <AdminRoute>
-                    <AdminDisputes />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                }
-              />
-
               <Route path="/reputation" element={<Reputation />} />
-
-              <Route
-                path="/settings"
-                element={<div>Settings coming soon.</div>}
-              />
 
               <Route
                 path="/profile"
                 element={<div>Profile coming soon.</div>}
               />
+
+              <Route
+                path="/settings"
+                element={<div>Settings coming soon.</div>}
+              />
             </Route>
+
+            {/* ADMIN APPLICATION */}
+
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/admin" element={<AdminDashboard />} />
+
+              <Route path="/admin/disputes" element={<AdminDisputes />} />
+            </Route>
+
+            {/* DEFAULTS */}
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
