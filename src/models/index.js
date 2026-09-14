@@ -24,6 +24,17 @@ ExecutorProfile.belongsTo(User, {
   as: "user",
 });
 
+User.hasOne(Verification, {
+  foreignKey: "user_id",
+  as: "verification",
+});
+
+
+Verification.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
 // User → Tasks
 User.hasMany(Task, {
   foreignKey: "requester_id",
@@ -36,16 +47,7 @@ Task.belongsTo(User, {
 });
 
 
-User.hasOne(Verification, {
-  foreignKey: "user_id",
-  as: "verification",
-});
 
-
-Verification.belongsTo(User, {
-  foreignKey: "user_id",
-  as: "user",
-});
 
 
 // Task → Assignments

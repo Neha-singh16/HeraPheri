@@ -2,6 +2,7 @@ import {
   getAdminOverview,
   getAdminUsers,
   updateUserAccountStatus,
+    getPendingVerifications,
 } from "../services/adminService.js";
 
 export async function getAdminOverviewController(req, res) {
@@ -61,6 +62,33 @@ export async function updateUserStatusController(req, res) {
     return res.status(400).json({
       success: false,
       message: error.message,
+    });
+  }
+}
+
+
+export async function getPendingVerificationsController(
+  req,
+  res,
+) {
+  try {
+    const verifications =
+      await getPendingVerifications();
+
+    return res.status(200).json({
+      success: true,
+      data: verifications,
+    });
+  } catch (error) {
+    console.error(
+      "Pending verification error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable to load verification queue.",
     });
   }
 }

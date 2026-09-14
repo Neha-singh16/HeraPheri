@@ -57,12 +57,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ======================================
-          PLATFORM HEALTH
-      ======================================= */}
-
       <section className="admin-stat-grid">
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Total users</span>
 
           <strong>{overview.users.total}</strong>
@@ -70,7 +66,7 @@ export default function AdminDashboard() {
           <small>{overview.users.active} active</small>
         </div>
 
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Executors</span>
 
           <strong>{overview.executors}</strong>
@@ -78,7 +74,7 @@ export default function AdminDashboard() {
           <small>Executor profiles</small>
         </div>
 
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Pending verification</span>
 
           <strong>{overview.verifications.pending}</strong>
@@ -86,7 +82,7 @@ export default function AdminDashboard() {
           <small>Require review</small>
         </div>
 
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Open disputes</span>
 
           <strong>{overview.disputes.open}</strong>
@@ -94,7 +90,7 @@ export default function AdminDashboard() {
           <small>Need attention</small>
         </div>
 
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Active tasks</span>
 
           <strong>{overview.tasks.active}</strong>
@@ -102,7 +98,7 @@ export default function AdminDashboard() {
           <small>Currently running</small>
         </div>
 
-        <div className="stat-card">
+        <div className="admin-stat-card">
           <span>Funds held</span>
 
           <strong>{formatMoney(overview.payments.heldAmount)}</strong>
@@ -110,10 +106,6 @@ export default function AdminDashboard() {
           <small>Awaiting settlement</small>
         </div>
       </section>
-
-      {/* ======================================
-          ADMIN WORK QUEUE
-      ======================================= */}
 
       <section className="dashboard-section">
         <div className="section-heading">
@@ -128,44 +120,54 @@ export default function AdminDashboard() {
           <Link to="/admin/users" className="admin-action-card">
             <span className="admin-action-icon">👥</span>
 
-            <div>
-              <h3>Manage users</h3>
+            <h3>Manage users</h3>
 
-              <p>Search accounts, inspect status, and manage access.</p>
-            </div>
+            <p>
+              Search accounts, inspect account status, executor capability, and
+              verification.
+            </p>
 
-            <strong>→</strong>
+            <strong>
+              <span>Open user management</span>
+
+              <span>→</span>
+            </strong>
           </Link>
 
           <Link to="/admin/verifications" className="admin-action-card">
             <span className="admin-action-icon">✓</span>
 
-            <div>
-              <h3>Review verification</h3>
+            <h3>Review verification</h3>
 
-              <p>Approve or reject pending identity verification.</p>
-            </div>
+            <p>
+              Review pending identity verification before an Executor can
+              receive higher trust.
+            </p>
 
-            <strong>{overview.verifications.pending}</strong>
+            <strong>
+              <span>{overview.verifications.pending} pending</span>
+
+              <span>→</span>
+            </strong>
           </Link>
 
           <Link to="/admin/disputes" className="admin-action-card">
             <span className="admin-action-icon">⚖</span>
 
-            <div>
-              <h3>Resolve disputes</h3>
+            <h3>Resolve disputes</h3>
 
-              <p>Review evidence and settle requester/executor conflicts.</p>
-            </div>
+            <p>
+              Review task evidence and choose the appropriate financial outcome.
+            </p>
 
-            <strong>{overview.disputes.open}</strong>
+            <strong>
+              <span>{overview.disputes.open} open</span>
+
+              <span>→</span>
+            </strong>
           </Link>
         </div>
       </section>
-
-      {/* ======================================
-          MARKETPLACE SNAPSHOT
-      ======================================= */}
 
       <section className="dashboard-section">
         <div className="section-heading">

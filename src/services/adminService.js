@@ -313,3 +313,32 @@ export async function updateUserAccountStatus({
       user.account_status,
   };
 }
+
+export async function getPendingVerifications() {
+  return Verification.findAll({
+    where: {
+      status: "PENDING",
+      verification_type: "IDENTITY",
+    },
+
+    include: [
+      {
+        model: User,
+
+        as: "user",
+
+        attributes: [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "account_status",
+        ],
+      },
+    ],
+
+    order: [
+      ["created_at", "ASC"],
+    ],
+  });
+}

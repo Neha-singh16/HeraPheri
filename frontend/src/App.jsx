@@ -34,6 +34,9 @@ import Earnings from "./pages/Earnings.jsx";
 
 import AdminDisputes from "./pages/AdminDisputes.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminUsers from "./pages/AdminUsers.jsx";
+
+import AdminVerifications from "./pages/AdminVerifications.jsx";
 
 function App() {
   return (
@@ -176,9 +179,27 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route path="/admin" element={<AdminDashboard />} />
 
-              <Route path="/admin/disputes" element={<AdminDisputes />} />
+              <Route
+  path="/admin"
+  element={<AdminDashboard />}
+/>
+
+<Route
+  path="/admin/users"
+  element={<AdminUsers />}
+/>
+
+<Route
+  path="/admin/verifications"
+  element={<AdminVerifications />}
+/>
+
+<Route
+  path="/admin/disputes"
+  element={<AdminDisputes />}
+/>
+     
             </Route>
 
             {/* DEFAULTS */}

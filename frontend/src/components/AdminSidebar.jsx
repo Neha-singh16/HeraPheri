@@ -23,34 +23,52 @@ const mainNavigation = [
   },
 ];
 
+// const operationsNavigation = [
+//   {
+//     label: "Tasks",
+//     path: "/admin/tasks",
+//     icon: "▣",
+//   },
+//   {
+//     label: "Payments",
+//     path: "/admin/payments",
+//     icon: "₹",
+//   },
+//   {
+//     label: "Audit Log",
+//     path: "/admin/audit",
+//     icon: "◷",
+//   },
+// ];
+
 const operationsNavigation = [
   {
     label: "Tasks",
-    path: "/admin/tasks",
     icon: "▣",
     disabled: true,
   },
   {
     label: "Payments",
-    path: "/admin/payments",
     icon: "₹",
     disabled: true,
   },
   {
     label: "Audit Log",
-    path: "/admin/audit",
     icon: "◷",
     disabled: true,
   },
 ];
-
 function NavigationItem({ item }) {
   if (item.disabled) {
     return (
-      <div className="sidebar-link disabled" title="Coming soon">
-        <span>{item.icon}</span>
+      <div className="sidebar-link admin-nav-disabled">
+        <span className="admin-nav-icon">
+          {item.icon}
+        </span>
 
         <span>{item.label}</span>
+
+        <small>Later</small>
       </div>
     );
   }
@@ -60,10 +78,14 @@ function NavigationItem({ item }) {
       to={item.path}
       end={item.path === "/admin"}
       className={({ isActive }) =>
-        isActive ? "sidebar-link active" : "sidebar-link"
+        isActive
+          ? "sidebar-link active"
+          : "sidebar-link"
       }
     >
-      <span>{item.icon}</span>
+      <span className="admin-nav-icon">
+        {item.icon}
+      </span>
 
       <span>{item.label}</span>
     </NavLink>
@@ -73,28 +95,29 @@ function NavigationItem({ item }) {
 export default function AdminSidebar() {
   return (
     <aside className="sidebar admin-sidebar">
-      <div className="admin-sidebar-heading">PLATFORM</div>
+      <div className="admin-sidebar-top">
+        <div className="admin-sidebar-heading">PLATFORM</div>
 
-      <nav>
-        {mainNavigation.map((item) => (
-          <NavigationItem key={item.path} item={item} />
-        ))}
-      </nav>
+        <nav>
+          {mainNavigation.map((item) => (
+            <NavigationItem key={item.path} item={item} />
+          ))}
+        </nav>
 
-      <div className="admin-sidebar-heading admin-sidebar-section">
-        OPERATIONS
+        <div className="admin-sidebar-heading admin-sidebar-section">
+          OPERATIONS
+        </div>
+
+        <nav>
+          {operationsNavigation.map((item) => (
+            <NavigationItem key={item.path} item={item} />
+          ))}
+        </nav>
       </div>
-
-      <nav>
-        {operationsNavigation.map((item) => (
-          <NavigationItem key={item.path} item={item} />
-        ))}
-      </nav>
 
       <div className="sidebar-footer">
         <div className="admin-sidebar-note">
           <strong>Admin Console</strong>
-
           <span>Platform operations</span>
         </div>
       </div>
