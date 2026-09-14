@@ -151,6 +151,10 @@ export async function createDispute({ taskId, userId, reason, description }) {
       throw new Error("This task cannot be disputed at its current stage.");
     }
 
+    if (!assignment) {
+      throw new Error("An active assignment is required to dispute this task.");
+    }
+
     const existingDispute = await Dispute.findOne({
       where: {
         task_id: taskId,
