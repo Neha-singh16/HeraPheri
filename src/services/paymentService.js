@@ -268,39 +268,31 @@ export async function releasePaymentForTask({ taskId, transaction }) {
     This is an internal wallet/ledger credit.
     It is NOT yet a bank payout.
   */
-await createLedgerEntryOnce({
-  paymentId: payment.id,
-  taskId: payment.task_id,
-  userId: payment.executor_id,
-  entryType: "EXECUTOR_EARNING",
-  amount: payment.executor_amount,
-  direction: "CREDIT",
-  reference: `TASK_RELEASE:${taskId}`,
-  transaction,
-});
+  await createLedgerEntryOnce({
+    paymentId: payment.id,
+    taskId: payment.task_id,
+    userId: payment.executor_id,
+    entryType: "EXECUTOR_EARNING",
+    amount: payment.executor_amount,
+    direction: "CREDIT",
+    reference: `TASK_RELEASE:${taskId}`,
+    transaction,
+  });
 
   /*
     Record the platform fee separately.
     The platform does not need a user_id here.
   */
-  await LedgerEntry.create(
-    {
-      user_id: null,
-      task_id: payment.task_id,
-      payment_id: payment.id,
-
-      entry_type: "PLATFORM_FEE",
-
-      amount: payment.platform_fee,
-
-      direction: "CREDIT",
-
-      reference: `PLATFORM_FEE:${taskId}`,
-    },
-    {
-      transaction,
-    },
-  );
+await createLedgerEntryOnce({
+  paymentId: payment.id,
+  taskId: payment.task_id,
+  userId: null,
+  entryType: "PLATFORM_FEE",
+  amount: payment.platform_fee,
+  direction: "CREDIT",
+  reference: `PLATFORM_FEE:${taskId}`,
+  transaction,
+});
 
   return payment;
 }
@@ -319,10 +311,7 @@ export async function requestRefundForTask({ taskId, transaction }) {
   }
 
   // Idempotent refund.
-  if (
-    payment.status === "REFUNDED" ||
-    payment.status === "REFUND_REQUESTED"
-  ) {
+  if (payment.status === "REFUNDED" || payment.status === "REFUND_REQUESTED") {
     return payment;
   }
 
@@ -415,7 +404,36 @@ export async function processRefundForTask({ taskId, reason }) {
       transaction,
     });
 
+    const notifications = await createTaskNotifications({
+      taskId: lockedPayment.task_id,
+
+      userIds: [lockedPayment.requester_id, lockedPayment.executor_id],
+
+      type: "PAYMENT_REFUNDED",
+
+      title: "Payment refunded",
+
+      message: "The disputed task payment has been refunded to the requester.",
+
+      data: {
+        paymentId: lockedPayment.id,
+        amount: lockedPayment.gross_amount,
+      },
+
+      transaction,
+    });
     await transaction.commit();
+
+    emitTaskUpdated({
+      taskId: lockedPayment.task_id,
+
+      userIds: [lockedPayment.requester_id, lockedPayment.executor_id],
+
+      reason: "PAYMENT_REFUNDED",
+    });
+
+    emitTaskNotifications(notifications);
+
     return lockedPayment;
   } catch (error) {
     await transaction.rollback();

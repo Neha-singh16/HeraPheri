@@ -104,6 +104,7 @@ export async function resolveAdminDispute({
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
+
     const payment = await Payment.findOne({
       where: { task_id: task.id },
       transaction,
@@ -122,15 +123,12 @@ export async function resolveAdminDispute({
           taskId: task.id,
           transaction,
         });
-      } else if (
-        !["REFUND_REQUESTED", "REFUNDED"].includes(payment.status)
-      ) {
+      } else if (!["REFUND_REQUESTED", "REFUNDED"].includes(payment.status)) {
         throw new Error("Only held payments can be refunded.");
       }
 
       await task.update({ status: "CANCELLED" }, { transaction });
       await assignment.update({ status: "CANCELLED" }, { transaction });
-
     } else {
       if (payment.status === "HELD") {
         await releasePaymentForTask({
@@ -179,6 +177,29 @@ export async function resolveAdminDispute({
       transaction,
     });
 
+    let paymentNotifications = [];
+
+    if (resolution === "RELEASE_EXECUTOR") {
+      paymentNotifications = await createTaskNotifications({
+        taskId: task.id,
+
+        userIds: [task.requester_id, assignment.executor_id],
+
+        type: "PAYMENT_RELEASED",
+
+        title: "Payment released",
+
+        message:
+          "The dispute was resolved in favor of the Executor and payment has been released.",
+
+        data: {
+          disputeId: dispute.id,
+          resolution,
+        },
+
+        transaction,
+      });
+    }
     await transaction.commit();
 
     if (refundRequest) {
@@ -193,13 +214,17 @@ export async function resolveAdminDispute({
       }
     }
 
-    emitTaskUpdated({
-      taskId: task.id,
-      userIds: [task.requester_id, assignment.executor_id],
-      reason: "DISPUTE_RESOLVED",
-    });
-    emitTaskNotifications(notifications);
+    emitTaskNotifications([...notifications, ...paymentNotifications]);
 
+    if (resolution === "RELEASE_EXECUTOR") {
+      emitTaskUpdated({
+        taskId: task.id,
+
+        userIds: [task.requester_id, assignment.executor_id],
+
+        reason: "PAYMENT_RELEASED",
+      });
+    }
     return dispute;
   } catch (error) {
     await transaction.rollback();

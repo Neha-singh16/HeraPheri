@@ -8,6 +8,9 @@ import {
   recalculateTrustScore,
   getTrustProfile,
 } from "../services/trustService.js";
+import { createNotification } from "../services/notificationService.js";
+
+import { emitNotificationToUser } from "../socket/index.js";
 
 // USER
 export async function getMyVerificationController(req, res) {
@@ -71,6 +74,24 @@ export async function approveVerificationController(req, res) {
     });
 
     await recalculateTrustScore(req.params.userId);
+
+    const notification = await createNotification({
+      userId: req.params.userId,
+
+      type: "VERIFICATION_APPROVED",
+
+      title: "Identity verified",
+
+      message:
+        "Your identity verification has been approved. Your HEREPHERI trust profile has been updated.",
+
+      data: {
+        verificationId: verification.id,
+        status: "VERIFIED",
+      },
+    });
+
+    emitNotificationToUser(req.params.userId, notification);
     return res.status(200).json({
       success: true,
 
@@ -100,7 +121,36 @@ export async function rejectVerificationController(req, res) {
 
     // Verification changed, so trust must
     // be recalculated immediately.
-    await recalculateTrustScore(req.params.userId);
+    await recalculateTrustScore(
+  req.params.userId,
+);
+
+const notification =
+  await createNotification({
+    userId: req.params.userId,
+
+    type: "VERIFICATION_REJECTED",
+
+    title: "Identity verification rejected",
+
+    message:
+      `Your identity verification was rejected. Reason: ${verification.rejection_reason}`,
+
+    data: {
+      verificationId:
+        verification.id,
+
+      status: "REJECTED",
+
+      reason:
+        verification.rejection_reason,
+    },
+  });
+
+emitNotificationToUser(
+  req.params.userId,
+  notification,
+);
 
     return res.status(200).json({
       success: true,
