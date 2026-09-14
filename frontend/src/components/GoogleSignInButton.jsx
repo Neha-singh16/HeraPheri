@@ -5,10 +5,19 @@ export default function GoogleSignInButton({
   text = "signin_with",
 }) {
   const containerRef = useRef(null);
+  const callbackRef = useRef(onCredential);
+  const initializedRef = useRef(false);
+  const scriptRef = useRef(null);
 
   useEffect(() => {
+    callbackRef.current = onCredential;
+
     function renderGoogleButton() {
-      if (!window.google || !containerRef.current) {
+      if (
+        initializedRef.current ||
+        !window.google ||
+        !containerRef.current
+      ) {
         return;
       }
 
@@ -17,10 +26,12 @@ export default function GoogleSignInButton({
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
 
-        callback: onCredential,
+        callback: (response) => callbackRef.current(response),
 
         auto_select: false,
       });
+
+      initializedRef.current = true;
 
       window.google.accounts.id.renderButton(containerRef.current, {
         theme: "outline",
@@ -37,7 +48,12 @@ export default function GoogleSignInButton({
       return;
     }
 
+    if (scriptRef.current) {
+      return;
+    }
+
     const script = document.createElement("script");
+    scriptRef.current = script;
 
     script.src = "https://accounts.google.com/gsi/client";
 
@@ -50,6 +66,9 @@ export default function GoogleSignInButton({
 
     return () => {
       script.onload = null;
+      if (scriptRef.current === script) {
+        scriptRef.current = null;
+      }
     };
   }, [onCredential, text]);
 
