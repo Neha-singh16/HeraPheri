@@ -136,12 +136,12 @@ export async function createDispute({ taskId, userId, reason, description }) {
     const assignment = await TaskAssignment.findOne({
       where: {
         task_id: taskId,
-        executor_id: userId,
+        status: "ACTIVE",
       },
       transaction,
     });
 
-    const isExecutor = Boolean(assignment);
+    const isExecutor = assignment?.executor_id === userId;
 
     if (!isRequester && !isExecutor) {
       throw new Error("You are not a participant in this task.");
@@ -152,7 +152,7 @@ export async function createDispute({ taskId, userId, reason, description }) {
     }
 
     if (!assignment) {
-      throw new Error("An active assignment is required to dispute this task.");
+      throw new Error("An assignment is required to dispute this task.");
     }
 
     const existingDispute = await Dispute.findOne({
