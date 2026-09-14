@@ -58,38 +58,46 @@ export default function ExecutorProfile() {
   const [error, setError] = useState("");
 
   const [message, setMessage] = useState("");
+async function fetchProfile() {
+  setLoading(true);
+  setError("");
+  setMessage("");
 
-  async function fetchProfile() {
-    setLoading(true);
-    setError("");
+  try {
+    const response =
+      await api.get(
+        "/executor-profile",
+      );
 
-    try {
-      const response = await api.get("/executor-profile");
+    const data =
+      response.data.data;
 
-      const data = response.data.data;
+    setProfile(data);
 
-      setProfile(data);
+    setForm({
+      bio: data.bio || "",
+    });
 
-      setForm({
-        bio: data.bio || "",
-      });
-    } catch (error) {
-      /*
-        404 means this user has not
-        created an Executor profile yet.
-      */
-      if (error.response?.status === 404) {
-        setProfile(null);
-      } else {
-        setError(
-          error.response?.data?.message || "Unable to load Executor profile.",
-        );
-      }
-    } finally {
-      setLoading(false);
+    /*
+      Successful profile load means the user
+      is already an Executor.
+    */
+    await refreshExecutorCapability();
+  } catch (error) {
+    if (
+      error.response?.status === 404
+    ) {
+      setProfile(null);
+    } else {
+      setError(
+        error.response?.data?.message ||
+          "Unable to load Executor profile.",
+      );
     }
+  } finally {
+    setLoading(false);
   }
-
+}
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -104,6 +112,18 @@ export default function ExecutorProfile() {
   async function createProfile(event) {
     event.preventDefault();
 
+    /*
+    Safety guard:
+    never try to create another profile if
+    this page already knows one exists.
+  */
+    if (profile) {
+      setError("");
+      setMessage("Your Executor profile already exists.");
+
+      return;
+    }
+
     setSaving(true);
     setError("");
     setMessage("");
@@ -113,21 +133,15 @@ export default function ExecutorProfile() {
         bio: form.bio.trim(),
       });
 
-      setProfile(response.data.data);
+      const createdProfile = response.data.data;
 
-      /*
-      Tell ModeContext that this user now
-      has Executor capability.
-    */
+      setProfile(createdProfile);
+
       const capabilityEnabled = await refreshExecutorCapability();
 
       if (capabilityEnabled) {
         setMode("EXECUTOR");
 
-        /*
-        Take the user directly to the
-        Executor dashboard.
-      */
         navigate("/dashboard", {
           replace: true,
         });
@@ -135,8 +149,38 @@ export default function ExecutorProfile() {
         return;
       }
 
-      setMessage("Executor profile created. Please refresh the page.");
+      setMessage("Executor profile created successfully.");
     } catch (error) {
+      /*
+      Another tab/request may have created the
+      profile at the same time.
+
+      Recover instead of showing a scary error.
+    */
+      if (error.response?.status === 409) {
+        try {
+          await fetchProfile();
+
+          const capabilityEnabled = await refreshExecutorCapability();
+
+          if (capabilityEnabled) {
+            setMode("EXECUTOR");
+
+            navigate("/dashboard", {
+              replace: true,
+            });
+
+            return;
+          }
+        } catch (refreshError) {
+          console.error("Unable to refresh Executor profile:", refreshError);
+        }
+
+        setError("Your Executor profile already exists.");
+
+        return;
+      }
+
       setError(
         error.response?.data?.message || "Unable to create Executor profile.",
       );
@@ -288,7 +332,7 @@ export default function ExecutorProfile() {
 
               <span
                 className={
-                    profile.is_available
+                  profile.is_available
                     ? "availability-badge available"
                     : "availability-badge unavailable"
                 }
@@ -311,7 +355,6 @@ export default function ExecutorProfile() {
               >
                 {profile.is_available ? "Go Offline" : "Go Available"}
               </button>
-
             </div>
           </section>
 
@@ -364,9 +407,7 @@ export default function ExecutorProfile() {
                     : "Executor is unavailable"}
                 </small>
 
-                <strong>
-                  {formatRelativeTime(profile.last_location_at)}
-                </strong>
+                <strong>{formatRelativeTime(profile.last_location_at)}</strong>
               </div>
 
               <button

@@ -7,7 +7,7 @@ import {
 
 export async function createExecutorProfileController(
   req,
-  res
+  res,
 ) {
   try {
     const profile =
@@ -25,12 +25,25 @@ export async function createExecutorProfileController(
   } catch (error) {
     console.error(
       "Create Executor profile error:",
-      error
+      error,
     );
+
+    if (
+      error.message ===
+      "Executor profile already exists."
+    ) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Executor profile already exists.",
+      });
+    }
 
     return res.status(400).json({
       success: false,
-      message: error.message,
+      message:
+        error.message ||
+        "Unable to create Executor profile.",
     });
   }
 }
