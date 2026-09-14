@@ -36,6 +36,18 @@ Task.belongsTo(User, {
 });
 
 
+User.hasOne(Verification, {
+  foreignKey: "user_id",
+  as: "verification",
+});
+
+
+Verification.belongsTo(User, {
+  foreignKey: "user_id",
+  as: "user",
+});
+
+
 // Task → Assignments
 Task.hasMany(TaskAssignment, {
   foreignKey: "task_id",

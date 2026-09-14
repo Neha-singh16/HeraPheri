@@ -73,3 +73,21 @@ NOW:
 4. Test concurrent refund calls
 5. Test duplicate release
 6. Test duplicate payment verification
+
+
+
+                         ADMIN CONSOLE
+                              │
+       ┌──────────────┬───────┴─────────┬──────────────┐
+       │              │                 │              │
+     USERS       VERIFICATIONS       DISPUTES      MONITORING
+       │              │                 │              │
+  suspend/       approve/reject      refund/       tasks/
+  activate       identity            release        activity
+  inspect        verification        payment
+       │
+       └────────────────────────────────────────────────
+                              │
+                         PAYMENTS
+                              │
+                     financial oversight
