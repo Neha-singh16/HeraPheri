@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 import { useSocket } from "../context/SocketContext.jsx";
 
 function formatMoney(amount) {
@@ -62,7 +63,7 @@ export default function Earnings() {
   }, [socket]);
 
   if (loading) {
-    return <div className="empty-state">Loading earnings...</div>;
+    return <DashboardSkeleton />;
   }
 
   if (error) {

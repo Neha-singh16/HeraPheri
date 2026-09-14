@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
 import { useMode } from "../context/ModeContext.jsx";
@@ -34,6 +35,10 @@ export default function RequesterDashboard() {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   const openTasks = tasks.filter((task) => task.status === "OPEN").length;
 

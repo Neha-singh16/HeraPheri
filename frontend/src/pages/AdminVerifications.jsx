@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 
 export default function AdminVerifications() {
   const [verifications, setVerifications] = useState([]);
@@ -94,7 +95,7 @@ export default function AdminVerifications() {
       {error && <div className="error-message">{error}</div>}
 
       {loading ? (
-        <div className="empty-state">Loading verification queue...</div>
+        <DashboardSkeleton />
       ) : verifications.length === 0 ? (
         <div className="empty-state">
           <h3>All caught up</h3>

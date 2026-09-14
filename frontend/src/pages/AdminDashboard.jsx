@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 
 function formatMoney(amount) {
   return `₹${Number(amount || 0).toLocaleString("en-IN", {
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="empty-state">Loading admin overview...</div>;
+    return <DashboardSkeleton />;
   }
 
   if (error) {

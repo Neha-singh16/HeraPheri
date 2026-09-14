@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -106,7 +107,7 @@ export default function AdminUsers() {
       {error && <div className="error-message">{error}</div>}
 
       {loading ? (
-        <div className="empty-state">Loading users...</div>
+        <DashboardSkeleton />
       ) : users.length === 0 ? (
         <div className="empty-state">
           <h3>No users found</h3>

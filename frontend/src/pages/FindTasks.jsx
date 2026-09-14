@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 function formatDistance(meters) {
   if (meters === null || meters === undefined) {
     return "Digital";
@@ -101,7 +102,7 @@ export default function FindTasks() {
       </div>{" "}
       {error && <div className="error-message"> {error} </div>}{" "}
       {loading ? (
-        <div className="empty-state"> Finding tasks near you... </div>
+        <DashboardSkeleton />
       ) : tasks.length === 0 ? (
         <div className="empty-state">
           {" "}

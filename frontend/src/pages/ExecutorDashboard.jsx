@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api/client.jsx";
+import { DashboardSkeleton } from "../components/Skeleton.jsx";
 
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -47,6 +48,10 @@ export default function ExecutorDashboard() {
   useEffect(() => {
     fetchDashboard();
   }, []);
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   const activeAssignments = assignments.filter(
     (assignment) => assignment.status === "ACTIVE",
