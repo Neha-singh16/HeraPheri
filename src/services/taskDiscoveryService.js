@@ -66,16 +66,19 @@ export async function getNearbyTasks({
         t.status,
         t.address_text,
 
-        ST_Distance_Sphere(
-          ST_SRID(t.location, 4326),
-          ST_SRID(
-            POINT(
-              :longitude,
-              :latitude
-            ),
-            4326
+        CASE
+          WHEN t.task_mode = 'DIGITAL' THEN NULL
+          ELSE ST_Distance_Sphere(
+            ST_SRID(t.location, 4326),
+            ST_SRID(
+              POINT(
+                :longitude,
+                :latitude
+              ),
+              4326
+            )
           )
-        ) AS distance_meters
+        END AS distance_meters
 
       FROM tasks t
 
@@ -85,21 +88,25 @@ export async function getNearbyTasks({
         -- as a task they can execute.
         AND t.requester_id != :executorId
 
-        -- Digital tasks don't require physical presence.
-        AND t.location IS NOT NULL
-
         ${categoryCondition}
 
-        AND ST_Distance_Sphere(
-          ST_SRID(t.location, 4326),
-          ST_SRID(
-            POINT(
-              :longitude,
-              :latitude
-            ),
-            4326
+        -- Digital tasks do not require a physical location.
+        AND (
+          t.task_mode = 'DIGITAL'
+          OR (
+            t.location IS NOT NULL
+            AND ST_Distance_Sphere(
+              ST_SRID(t.location, 4326),
+              ST_SRID(
+                POINT(
+                  :longitude,
+                  :latitude
+                ),
+                4326
+              )
+            ) <= :radiusMeters
           )
-        ) <= :radiusMeters
+        )
 
       ORDER BY distance_meters ASC
 
