@@ -15,7 +15,6 @@ import {
 const VALID_CATEGORIES = ["GO", "GET", "CHECK", "DIGITAL"];
 const VALID_MODES = ["PHYSICAL", "DIGITAL", "HYBRID"];
 
-
 export async function createTask({
   requesterId,
   category,
@@ -86,15 +85,50 @@ export async function createTask({
   }
   const transaction = await sequelize.transaction();
   try {
+    // const task = await Task.create(
+    //   {
+    //     requester_id: requesterId,
+    //     category,
+    //     // task_mode: taskMode,
+    //     // title: taskMode,
+    //     title: title.trim(),
+    //     description: description.trim(),
+    //     // Sequelize accepts a GeoJSON Point for the POINT column.
+    //     location:
+    //       latitude != null && longitude != null
+    //         ? {
+    //             type: "Point",
+    //             coordinates: [Number(longitude), Number(latitude)],
+    //           }
+    //         : null,
+
+    //     address_text: addressText?.trim() || null,
+    //     deadline_at: deadline,
+    //     reward_amount: reward,
+    //     currency: "INR",
+    //     risk_level: riskLevel,
+    //     proof_type: proofType,
+    //     status: "OPEN",
+    //   },
+    //   {
+    //     transaction,
+    //   },
+    // );
+
     const task = await Task.create(
       {
         requester_id: requesterId,
         category,
-        // task_mode: taskMode,
-        // title: taskMode,
+
+        // IMPORTANT:
+        // Sequelize model column is task_mode,
+        // service argument is taskMode.
+        task_mode: taskMode,
+
         title: title.trim(),
+
         description: description.trim(),
-        // Sequelize accepts a GeoJSON Point for the POINT column.
+
         location:
           latitude != null && longitude != null
             ? {
@@ -104,11 +138,17 @@ export async function createTask({
             : null,
 
         address_text: addressText?.trim() || null,
+
         deadline_at: deadline,
+
         reward_amount: reward,
+
         currency: "INR",
+
         risk_level: riskLevel,
+
         proof_type: proofType,
+
         status: "OPEN",
       },
       {
@@ -156,21 +196,11 @@ export async function getMyTasks({
   status,
   category,
 }) {
-  const safePage = Math.max(
-    Number(page) || 1,
-    1,
-  );
+  const safePage = Math.max(Number(page) || 1, 1);
 
-  const safeLimit = Math.min(
-    Math.max(
-      Number(limit) || 10,
-      1,
-    ),
-    50,
-  );
+  const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
-  const offset =
-    (safePage - 1) * safeLimit;
+  const offset = (safePage - 1) * safeLimit;
 
   const where = {
     requester_id: requesterId,
@@ -184,47 +214,33 @@ export async function getMyTasks({
     where.category = category;
   }
 
-  const [
-    result,
-    openCount,
-    activeCount,
-    completedCount,
-  ] = await Promise.all([
+  const [result, openCount, activeCount, completedCount] = await Promise.all([
     Task.findAndCountAll({
       where,
-      order: [
-        ["created_at", "DESC"],
-      ],
+      order: [["created_at", "DESC"]],
       limit: safeLimit,
       offset,
     }),
 
     Task.count({
       where: {
-        requester_id:
-          requesterId,
+        requester_id: requesterId,
         status: "OPEN",
       },
     }),
 
     Task.count({
       where: {
-        requester_id:
-          requesterId,
+        requester_id: requesterId,
         status: {
-          [Op.in]: [
-            "ASSIGNED",
-            "IN_PROGRESS",
-            "PENDING_APPROVAL",
-          ],
+          [Op.in]: ["ASSIGNED", "IN_PROGRESS", "PENDING_APPROVAL"],
         },
       },
     }),
 
     Task.count({
       where: {
-        requester_id:
-          requesterId,
+        requester_id: requesterId,
         status: "COMPLETED",
       },
     }),
@@ -243,53 +259,40 @@ export async function getMyTasks({
       page: safePage,
       limit: safeLimit,
       total: result.count,
-      totalPages: Math.ceil(
-        result.count / safeLimit,
-      ),
+      totalPages: Math.ceil(result.count / safeLimit),
     },
   };
 }
 
-
 // Get one task.
-export async function getTaskById({
-  taskId,
-  userId,
-}) {
-  const task = await Task.findByPk(
-    taskId,
-    {
-      include: [
-        {
-          model: Payment,
-          as: "payment",
-          attributes: [
-            "id",
-            "gross_amount",
-            "platform_fee",
-            "executor_amount",
-            "currency",
-            "status",
-            "paid_at",
-            "released_at",
-          ],
-        },
-      ],
-    },
-  );
+export async function getTaskById({ taskId, userId }) {
+  const task = await Task.findByPk(taskId, {
+    include: [
+      {
+        model: Payment,
+        as: "payment",
+        attributes: [
+          "id",
+          "gross_amount",
+          "platform_fee",
+          "executor_amount",
+          "currency",
+          "status",
+          "paid_at",
+          "released_at",
+        ],
+      },
+    ],
+  });
 
   if (!task) {
-    throw new Error(
-      "Task not found.",
-    );
+    throw new Error("Task not found.");
   }
 
   /*
     Requester can view their own task.
   */
-  if (
-    task.requester_id === userId
-  ) {
+  if (task.requester_id === userId) {
     return task;
   }
 
@@ -301,26 +304,18 @@ export async function getTaskById({
     states so completed/cancelled/released
     tasks remain accessible to participants.
   */
-  const assignment =
-    await TaskAssignment.findOne({
-      where: {
-        task_id: task.id,
-        executor_id: userId,
-        status: {
-          [Op.in]: [
-            "ACTIVE",
-            "COMPLETED",
-            "RELEASED",
-            "CANCELLED",
-          ],
-        },
+  const assignment = await TaskAssignment.findOne({
+    where: {
+      task_id: task.id,
+      executor_id: userId,
+      status: {
+        [Op.in]: ["ACTIVE", "COMPLETED", "RELEASED", "CANCELLED"],
       },
-    });
+    },
+  });
 
   if (!assignment) {
-    throw new Error(
-      "You are not authorized to view this task.",
-    );
+    throw new Error("You are not authorized to view this task.");
   }
 
   return task;
@@ -553,7 +548,6 @@ export async function cancelTask({ taskId, requesterId }) {
           { transaction },
         );
       }
-
     }
 
     await transaction.commit();
