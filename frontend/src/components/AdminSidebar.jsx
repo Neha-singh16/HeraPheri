@@ -27,18 +27,18 @@ const mainNavigation = [
 const operationsNavigation = [
   {
     label: "Tasks",
+    path: "/admin/tasks",
     icon: "▣",
-    disabled: true,
   },
   {
     label: "Payments",
+    path: "/admin/payments",
     icon: "₹",
-    disabled: true,
   },
   {
     label: "Audit Log",
+    path: "/admin/audit",
     icon: "◷",
-    disabled: true,
   },
 ];
 

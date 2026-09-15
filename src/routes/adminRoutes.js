@@ -1,9 +1,6 @@
 import express from "express";
 
-import {
-  authenticate,
-  requireAdmin,
-} from "../middleware/authMiddleware.js";
+import { authenticate, requireAdmin } from "../middleware/authMiddleware.js";
 
 import {
   getAdminOverviewController,
@@ -11,48 +8,31 @@ import {
   updateUserStatusController,
   getPendingVerificationsController,
   getAdminTasksController,
-    getAdminAuditController,
-
+  getAdminPaymentsController,
+  getAdminAuditController,
 } from "../controllers/adminController.js";
 
-
-
-const router =
-  express.Router();
-
+const router = express.Router();
 
 router.use(authenticate);
 router.use(requireAdmin);
 
+/* Overview */
+router.get("/overview", getAdminOverviewController);
 
-router.get(
-  "/overview",
-  getAdminOverviewController,
-);
+/* Users */
+router.get("/users", getAdminUsersController);
 
-router.get(
-  "/users",
-  getAdminUsersController,
-);
+router.patch("/users/:userId/status", updateUserStatusController);
 
+/* Verification */
+router.get("/verifications", getPendingVerificationsController);
 
-router.patch(
-  "/users/:userId/status",
-  updateUserStatusController,
-);
+/* Operations */
+router.get("/tasks", getAdminTasksController);
 
+router.get("/payments", getAdminPaymentsController);
 
-router.get(
-  "/verifications",
-  getPendingVerificationsController,
-);
-router.get(
-  "/tasks",
-  getAdminTasksController,
-);
+router.get("/audit", getAdminAuditController);
 
-router.get(
-  "/audit",
-  getAdminAuditController,
-);
 export default router;

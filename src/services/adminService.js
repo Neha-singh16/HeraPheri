@@ -5,9 +5,15 @@ import {
   ExecutorProfile,
   Verification,
   Task,
+  TaskAssignment,
+  TaskEvent,
   Dispute,
   Payment,
 } from "../models/index.js";
+
+/* =========================================================
+   ADMIN OVERVIEW
+========================================================= */
 
 export async function getAdminOverview() {
   const [
@@ -100,6 +106,10 @@ export async function getAdminOverview() {
   };
 }
 
+/* =========================================================
+   ADMIN USERS
+========================================================= */
+
 export async function getAdminUsers({
   search = "",
   status,
@@ -107,9 +117,9 @@ export async function getAdminUsers({
   page = 1,
   limit = 20,
 }) {
-  const normalizedPage = Math.max(Number(page) || 1, 1);
+  const safePage = Math.max(Number(page) || 1, 1);
 
-  const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
   const where = {};
 
@@ -153,11 +163,8 @@ export async function getAdminUsers({
     include: [
       {
         model: ExecutorProfile,
-
         as: "executorProfile",
-
         required: false,
-
         attributes: [
           "trust_score",
           "completion_rate",
@@ -170,11 +177,8 @@ export async function getAdminUsers({
 
       {
         model: Verification,
-
         as: "verification",
-
         required: false,
-
         attributes: [
           "status",
           "verification_type",
@@ -186,25 +190,26 @@ export async function getAdminUsers({
 
     order: [["created_at", "DESC"]],
 
-    limit: normalizedLimit,
+    limit: safeLimit,
 
-    offset: (normalizedPage - 1) * normalizedLimit,
+    offset: (safePage - 1) * safeLimit,
   });
 
   return {
     users: rows,
 
     pagination: {
-      page: normalizedPage,
-
-      limit: normalizedLimit,
-
+      page: safePage,
+      limit: safeLimit,
       total: count,
-
-      pages: Math.ceil(count / normalizedLimit),
+      pages: Math.ceil(count / safeLimit),
     },
   };
 }
+
+/* =========================================================
+   UPDATE USER ACCOUNT STATUS
+========================================================= */
 
 export async function updateUserAccountStatus({
   userId,
@@ -241,6 +246,10 @@ export async function updateUserAccountStatus({
   };
 }
 
+/* =========================================================
+   PENDING VERIFICATIONS
+========================================================= */
+
 export async function getPendingVerifications() {
   return Verification.findAll({
     where: {
@@ -251,9 +260,7 @@ export async function getPendingVerifications() {
     include: [
       {
         model: User,
-
         as: "user",
-
         attributes: ["id", "name", "email", "phone", "account_status"],
       },
     ],
@@ -261,6 +268,10 @@ export async function getPendingVerifications() {
     order: [["created_at", "ASC"]],
   });
 }
+
+/* =========================================================
+   ADMIN TASK MONITORING
+========================================================= */
 
 export async function getAdminTasks({
   search = "",
@@ -300,21 +311,25 @@ export async function getAdminTasks({
 
   const { rows, count } = await Task.findAndCountAll({
     where,
+
     include: [
       {
         model: User,
         as: "requester",
         attributes: ["id", "name", "email"],
       },
+
       {
         model: TaskAssignment,
         as: "assignments",
         required: false,
+
         where: {
           status: {
             [Op.in]: ["ACTIVE", "COMPLETED", "RELEASED"],
           },
         },
+
         include: [
           {
             model: User,
@@ -324,14 +339,19 @@ export async function getAdminTasks({
         ],
       },
     ],
+
     order: [["created_at", "DESC"]],
+
     limit: safeLimit,
+
     offset: (safePage - 1) * safeLimit,
+
     distinct: true,
   });
 
   return {
     tasks: rows,
+
     pagination: {
       page: safePage,
       limit: safeLimit,
@@ -341,6 +361,9 @@ export async function getAdminTasks({
   };
 }
 
+/* =========================================================
+   ADMIN PAYMENT MONITORING
+========================================================= */
 
 export async function getAdminPayments({
   status,
@@ -348,15 +371,9 @@ export async function getAdminPayments({
   page = 1,
   limit = 20,
 }) {
-  const safePage = Math.max(
-    Number(page) || 1,
-    1,
-  );
+  const safePage = Math.max(Number(page) || 1, 1);
 
-  const safeLimit = Math.min(
-    Math.max(Number(limit) || 20, 1),
-    100,
-  );
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
   const where = {};
 
@@ -364,110 +381,15 @@ export async function getAdminPayments({
     where.status = status;
   }
 
-  const include = [
-    {
-      model: Task,
-      as: "task",
-      attributes: [
-        "id",
-        "title",
-        "status",
-      ],
-    },
-    {
-      model: User,
-      as: "requester",
-      attributes: [
-        "id",
-        "name",
-        "email",
-      ],
-    },
-    {
-      model: User,
-      as: "executor",
-      attributes: [
-        "id",
-        "name",
-        "email",
-      ],
-    },
-  ];
+  const taskWhere = search.trim()
+    ? {
+        title: {
+          [Op.like]: `%${search.trim()}%`,
+        },
+      }
+    : undefined;
 
-  if (search.trim()) {
-    include[0].where = {
-      title: {
-        [Op.like]:
-          `%${search.trim()}%`,
-      },
-    };
-  }
-
-  const {
-    rows,
-    count,
-  } = await Payment.findAndCountAll({
-    where,
-    include,
-    order: [
-      ["created_at", "DESC"],
-    ],
-    limit: safeLimit,
-    offset:
-      (safePage - 1) * safeLimit,
-    distinct: true,
-  });
-
-  return {
-    payments: rows,
-    pagination: {
-      page: safePage,
-      limit: safeLimit,
-      total: count,
-      pages: Math.ceil(
-        count / safeLimit,
-      ),
-    },
-  };
-}
-
-
-export async function getAdminAuditLogs({
-  search = "",
-  eventType,
-  page = 1,
-  limit = 50,
-}) {
-  const safePage = Math.max(
-    Number(page) || 1,
-    1,
-  );
-
-  const safeLimit = Math.min(
-    Math.max(Number(limit) || 50, 1),
-    100,
-  );
-
-  const where = {};
-
-  if (eventType) {
-    where.event_type = eventType;
-  }
-
-  const taskWhere =
-    search.trim()
-      ? {
-          title: {
-            [Op.like]:
-              `%${search.trim()}%`,
-          },
-        }
-      : undefined;
-
-  const {
-    rows,
-    count,
-  } = await TaskEvent.findAndCountAll({
+  const { rows, count } = await Payment.findAndCountAll({
     where,
 
     include: [
@@ -476,33 +398,96 @@ export async function getAdminAuditLogs({
         as: "task",
         required: Boolean(taskWhere),
         where: taskWhere,
-        attributes: [
-          "id",
-          "title",
-          "status",
-        ],
+        attributes: ["id", "title", "status"],
       },
+
+      {
+        model: User,
+        as: "requester",
+        attributes: ["id", "name", "email"],
+      },
+
+      {
+        model: User,
+        as: "executor",
+        attributes: ["id", "name", "email"],
+      },
+    ],
+
+    order: [["created_at", "DESC"]],
+
+    limit: safeLimit,
+
+    offset: (safePage - 1) * safeLimit,
+
+    distinct: true,
+  });
+
+  return {
+    payments: rows,
+
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total: count,
+      pages: Math.ceil(count / safeLimit),
+    },
+  };
+}
+
+/* =========================================================
+   ADMIN AUDIT LOG
+========================================================= */
+
+export async function getAdminAuditLogs({
+  search = "",
+  eventType,
+  page = 1,
+  limit = 50,
+}) {
+  const safePage = Math.max(Number(page) || 1, 1);
+
+  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+
+  const where = {};
+
+  if (eventType) {
+    where.event_type = eventType;
+  }
+
+  const taskWhere = search.trim()
+    ? {
+        title: {
+          [Op.like]: `%${search.trim()}%`,
+        },
+      }
+    : undefined;
+
+  const { rows, count } = await TaskEvent.findAndCountAll({
+    where,
+
+    include: [
+      {
+        model: Task,
+        as: "task",
+        required: Boolean(taskWhere),
+        where: taskWhere,
+        attributes: ["id", "title", "status"],
+      },
+
       {
         model: User,
         as: "actor",
         required: false,
-        attributes: [
-          "id",
-          "name",
-          "email",
-        ],
+        attributes: ["id", "name", "email"],
       },
     ],
 
-    order: [
-      ["created_at", "DESC"],
-    ],
+    order: [["created_at", "DESC"]],
 
     limit: safeLimit,
 
-    offset:
-      (safePage - 1) *
-      safeLimit,
+    offset: (safePage - 1) * safeLimit,
 
     distinct: true,
   });
@@ -514,9 +499,7 @@ export async function getAdminAuditLogs({
       page: safePage,
       limit: safeLimit,
       total: count,
-      pages: Math.ceil(
-        count / safeLimit,
-      ),
+      pages: Math.ceil(count / safeLimit),
     },
   };
 }
