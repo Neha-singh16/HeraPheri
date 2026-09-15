@@ -1,8 +1,7 @@
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
-  async up(queryInterface) {
+export async function up(queryInterface) {
     await queryInterface.sequelize.query(`
       ALTER TABLE payments
       MODIFY COLUMN status
@@ -20,9 +19,9 @@ module.exports = {
       NOT NULL
       DEFAULT 'PENDING';
     `);
-  },
+}
 
-  async down(queryInterface) {
+export async function down(queryInterface) {
     await queryInterface.sequelize.query(`
       ALTER TABLE payments
       MODIFY COLUMN status
@@ -39,5 +38,4 @@ module.exports = {
       NOT NULL
       DEFAULT 'PENDING';
     `);
-  },
-};
+}

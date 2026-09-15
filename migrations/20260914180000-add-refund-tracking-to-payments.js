@@ -1,8 +1,7 @@
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
-module.exports = {
-  async up(queryInterface, Sequelize) {
+export async function up(queryInterface, Sequelize) {
     await queryInterface.addColumn("payments", "provider_refund_id", {
       type: Sequelize.STRING(100),
       allowNull: true,
@@ -14,10 +13,9 @@ module.exports = {
       allowNull: false,
       defaultValue: "NONE",
     });
-  },
+}
 
-  async down(queryInterface) {
+export async function down(queryInterface) {
     await queryInterface.removeColumn("payments", "refund_status");
     await queryInterface.removeColumn("payments", "provider_refund_id");
-  },
-};
+}
