@@ -10,6 +10,8 @@ import {
   getAdminUsersController,
   updateUserStatusController,
   getPendingVerificationsController,
+  getAdminTasksController,
+    getAdminAuditController,
 
 } from "../controllers/adminController.js";
 
@@ -43,5 +45,14 @@ router.patch(
 router.get(
   "/verifications",
   getPendingVerificationsController,
+);
+router.get(
+  "/tasks",
+  getAdminTasksController,
+);
+
+router.get(
+  "/audit",
+  getAdminAuditController,
 );
 export default router;

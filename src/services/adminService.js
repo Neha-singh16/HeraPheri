@@ -100,8 +100,6 @@ export async function getAdminOverview() {
   };
 }
 
-
-
 export async function getAdminUsers({
   search = "",
   status,
@@ -109,58 +107,36 @@ export async function getAdminUsers({
   page = 1,
   limit = 20,
 }) {
-  const normalizedPage =
-    Math.max(
-      Number(page) || 1,
-      1,
-    );
+  const normalizedPage = Math.max(Number(page) || 1, 1);
 
-  const normalizedLimit =
-    Math.min(
-      Math.max(
-        Number(limit) || 20,
-        1,
-      ),
-      100,
-    );
-
+  const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
 
   const where = {};
 
-
   if (status) {
-    where.account_status =
-      status;
+    where.account_status = status;
   }
-
 
   if (role) {
     where.role = role;
   }
 
-
   if (search.trim()) {
     where[Op.or] = [
       {
         name: {
-          [Op.like]:
-            `%${search.trim()}%`,
+          [Op.like]: `%${search.trim()}%`,
         },
       },
       {
         email: {
-          [Op.like]:
-            `%${search.trim()}%`,
+          [Op.like]: `%${search.trim()}%`,
         },
       },
     ];
   }
 
-
-  const {
-    rows,
-    count,
-  } = await User.findAndCountAll({
+  const { rows, count } = await User.findAndCountAll({
     where,
 
     attributes: [
@@ -176,11 +152,9 @@ export async function getAdminUsers({
 
     include: [
       {
-        model:
-          ExecutorProfile,
+        model: ExecutorProfile,
 
-        as:
-          "executorProfile",
+        as: "executorProfile",
 
         required: false,
 
@@ -195,11 +169,9 @@ export async function getAdminUsers({
       },
 
       {
-        model:
-          Verification,
+        model: Verification,
 
-        as:
-          "verification",
+        as: "verification",
 
         required: false,
 
@@ -212,105 +184,60 @@ export async function getAdminUsers({
       },
     ],
 
-    order: [
-      ["created_at", "DESC"],
-    ],
+    order: [["created_at", "DESC"]],
 
-    limit:
-      normalizedLimit,
+    limit: normalizedLimit,
 
-    offset:
-      (normalizedPage - 1) *
-      normalizedLimit,
+    offset: (normalizedPage - 1) * normalizedLimit,
   });
-
 
   return {
     users: rows,
 
     pagination: {
-      page:
-        normalizedPage,
+      page: normalizedPage,
 
-      limit:
-        normalizedLimit,
+      limit: normalizedLimit,
 
       total: count,
 
-      pages: Math.ceil(
-        count /
-          normalizedLimit,
-      ),
+      pages: Math.ceil(count / normalizedLimit),
     },
   };
 }
-
 
 export async function updateUserAccountStatus({
   userId,
   accountStatus,
   adminId,
 }) {
-  const allowedStatuses = [
-    "ACTIVE",
-    "SUSPENDED",
-    "BANNED",
-    "DEACTIVATED",
-  ];
+  const allowedStatuses = ["ACTIVE", "SUSPENDED", "BANNED", "DEACTIVATED"];
 
-
-  if (
-    !allowedStatuses.includes(
-      accountStatus,
-    )
-  ) {
-    throw new Error(
-      "Invalid account status.",
-    );
+  if (!allowedStatuses.includes(accountStatus)) {
+    throw new Error("Invalid account status.");
   }
 
-
-  if (
-    userId === adminId
-  ) {
-    throw new Error(
-      "You cannot change your own account status.",
-    );
+  if (userId === adminId) {
+    throw new Error("You cannot change your own account status.");
   }
 
-
-  const user =
-    await User.findByPk(
-      userId,
-    );
-
+  const user = await User.findByPk(userId);
 
   if (!user) {
-    throw new Error(
-      "User not found.",
-    );
+    throw new Error("User not found.");
   }
 
-
-  if (
-    user.role === "ADMIN"
-  ) {
-    throw new Error(
-      "Admin accounts cannot be modified from this screen.",
-    );
+  if (user.role === "ADMIN") {
+    throw new Error("Admin accounts cannot be modified from this screen.");
   }
-
 
   await user.update({
-    account_status:
-      accountStatus,
+    account_status: accountStatus,
   });
-
 
   return {
     id: user.id,
-    accountStatus:
-      user.account_status,
+    accountStatus: user.account_status,
   };
 }
 
@@ -327,18 +254,269 @@ export async function getPendingVerifications() {
 
         as: "user",
 
+        attributes: ["id", "name", "email", "phone", "account_status"],
+      },
+    ],
+
+    order: [["created_at", "ASC"]],
+  });
+}
+
+export async function getAdminTasks({
+  search = "",
+  status,
+  riskLevel,
+  page = 1,
+  limit = 20,
+}) {
+  const safePage = Math.max(Number(page) || 1, 1);
+
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+
+  const where = {};
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (riskLevel) {
+    where.risk_level = riskLevel;
+  }
+
+  if (search.trim()) {
+    where[Op.or] = [
+      {
+        title: {
+          [Op.like]: `%${search.trim()}%`,
+        },
+      },
+      {
+        address_text: {
+          [Op.like]: `%${search.trim()}%`,
+        },
+      },
+    ];
+  }
+
+  const { rows, count } = await Task.findAndCountAll({
+    where,
+    include: [
+      {
+        model: User,
+        as: "requester",
+        attributes: ["id", "name", "email"],
+      },
+      {
+        model: TaskAssignment,
+        as: "assignments",
+        required: false,
+        where: {
+          status: {
+            [Op.in]: ["ACTIVE", "COMPLETED", "RELEASED"],
+          },
+        },
+        include: [
+          {
+            model: User,
+            as: "executor",
+            attributes: ["id", "name", "email"],
+          },
+        ],
+      },
+    ],
+    order: [["created_at", "DESC"]],
+    limit: safeLimit,
+    offset: (safePage - 1) * safeLimit,
+    distinct: true,
+  });
+
+  return {
+    tasks: rows,
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total: count,
+      pages: Math.ceil(count / safeLimit),
+    },
+  };
+}
+
+
+export async function getAdminPayments({
+  status,
+  search = "",
+  page = 1,
+  limit = 20,
+}) {
+  const safePage = Math.max(
+    Number(page) || 1,
+    1,
+  );
+
+  const safeLimit = Math.min(
+    Math.max(Number(limit) || 20, 1),
+    100,
+  );
+
+  const where = {};
+
+  if (status) {
+    where.status = status;
+  }
+
+  const include = [
+    {
+      model: Task,
+      as: "task",
+      attributes: [
+        "id",
+        "title",
+        "status",
+      ],
+    },
+    {
+      model: User,
+      as: "requester",
+      attributes: [
+        "id",
+        "name",
+        "email",
+      ],
+    },
+    {
+      model: User,
+      as: "executor",
+      attributes: [
+        "id",
+        "name",
+        "email",
+      ],
+    },
+  ];
+
+  if (search.trim()) {
+    include[0].where = {
+      title: {
+        [Op.like]:
+          `%${search.trim()}%`,
+      },
+    };
+  }
+
+  const {
+    rows,
+    count,
+  } = await Payment.findAndCountAll({
+    where,
+    include,
+    order: [
+      ["created_at", "DESC"],
+    ],
+    limit: safeLimit,
+    offset:
+      (safePage - 1) * safeLimit,
+    distinct: true,
+  });
+
+  return {
+    payments: rows,
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total: count,
+      pages: Math.ceil(
+        count / safeLimit,
+      ),
+    },
+  };
+}
+
+
+export async function getAdminAuditLogs({
+  search = "",
+  eventType,
+  page = 1,
+  limit = 50,
+}) {
+  const safePage = Math.max(
+    Number(page) || 1,
+    1,
+  );
+
+  const safeLimit = Math.min(
+    Math.max(Number(limit) || 50, 1),
+    100,
+  );
+
+  const where = {};
+
+  if (eventType) {
+    where.event_type = eventType;
+  }
+
+  const taskWhere =
+    search.trim()
+      ? {
+          title: {
+            [Op.like]:
+              `%${search.trim()}%`,
+          },
+        }
+      : undefined;
+
+  const {
+    rows,
+    count,
+  } = await TaskEvent.findAndCountAll({
+    where,
+
+    include: [
+      {
+        model: Task,
+        as: "task",
+        required: Boolean(taskWhere),
+        where: taskWhere,
+        attributes: [
+          "id",
+          "title",
+          "status",
+        ],
+      },
+      {
+        model: User,
+        as: "actor",
+        required: false,
         attributes: [
           "id",
           "name",
           "email",
-          "phone",
-          "account_status",
         ],
       },
     ],
 
     order: [
-      ["created_at", "ASC"],
+      ["created_at", "DESC"],
     ],
+
+    limit: safeLimit,
+
+    offset:
+      (safePage - 1) *
+      safeLimit,
+
+    distinct: true,
   });
+
+  return {
+    events: rows,
+
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total: count,
+      pages: Math.ceil(
+        count / safeLimit,
+      ),
+    },
+  };
 }

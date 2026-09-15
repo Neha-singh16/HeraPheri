@@ -35,7 +35,9 @@ import Earnings from "./pages/Earnings.jsx";
 import AdminDisputes from "./pages/AdminDisputes.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminUsers from "./pages/AdminUsers.jsx";
-
+import AdminTasks from "./pages/AdminTasks.jsx";
+import AdminPayments from "./pages/AdminPayments.jsx";
+import AdminAudit from "./pages/AdminAudit.jsx";
 import AdminVerifications from "./pages/AdminVerifications.jsx";
 
 function App() {
@@ -198,6 +200,20 @@ function App() {
 <Route
   path="/admin/disputes"
   element={<AdminDisputes />}
+/>
+<Route
+  path="/admin/tasks"
+  element={<AdminTasks />}
+/>
+
+<Route
+  path="/admin/payments"
+  element={<AdminPayments />}
+/>
+
+<Route
+  path="/admin/audit"
+  element={<AdminAudit />}
 />
      
             </Route>

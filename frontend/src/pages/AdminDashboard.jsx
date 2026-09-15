@@ -199,6 +199,96 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
+      <section className="dashboard-section">
+  <div className="section-heading">
+    <div>
+      <p className="eyebrow">
+        OPERATIONS
+      </p>
+
+      <h2>
+        Marketplace monitoring
+      </h2>
+    </div>
+  </div>
+
+  <div className="admin-action-grid">
+    <Link
+      to="/admin/tasks"
+      className="admin-action-card"
+    >
+      <span className="admin-action-icon">
+        ▣
+      </span>
+
+      <h3>
+        Task monitoring
+      </h3>
+
+      <p>
+        Monitor active, disputed and completed
+        marketplace tasks.
+      </p>
+
+      <strong>
+        <span>
+          Open operations
+        </span>
+        <span>→</span>
+      </strong>
+    </Link>
+
+    <Link
+      to="/admin/payments"
+      className="admin-action-card"
+    >
+      <span className="admin-action-icon">
+        ₹
+      </span>
+
+      <h3>
+        Payment monitoring
+      </h3>
+
+      <p>
+        Inspect held, released and refunded
+        payments.
+      </p>
+
+      <strong>
+        <span>
+          View payments
+        </span>
+        <span>→</span>
+      </strong>
+    </Link>
+
+    <Link
+      to="/admin/audit"
+      className="admin-action-card"
+    >
+      <span className="admin-action-icon">
+        ◷
+      </span>
+
+      <h3>
+        Audit log
+      </h3>
+
+      <p>
+        Trace important marketplace events
+        from creation to settlement.
+      </p>
+
+      <strong>
+        <span>
+          View history
+        </span>
+        <span>→</span>
+      </strong>
+    </Link>
+  </div>
+</section>
     </div>
   );
 }

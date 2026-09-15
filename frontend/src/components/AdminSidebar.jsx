@@ -23,23 +23,6 @@ const mainNavigation = [
   },
 ];
 
-// const operationsNavigation = [
-//   {
-//     label: "Tasks",
-//     path: "/admin/tasks",
-//     icon: "▣",
-//   },
-//   {
-//     label: "Payments",
-//     path: "/admin/payments",
-//     icon: "₹",
-//   },
-//   {
-//     label: "Audit Log",
-//     path: "/admin/audit",
-//     icon: "◷",
-//   },
-// ];
 
 const operationsNavigation = [
   {
@@ -58,6 +41,7 @@ const operationsNavigation = [
     disabled: true,
   },
 ];
+
 function NavigationItem({ item }) {
   if (item.disabled) {
     return (
