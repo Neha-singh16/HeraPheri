@@ -529,5 +529,5 @@ build because Vite embeds them into the generated assets.
 
 ## License
 
-This project currently does not declare a production open-source license. Add a
-license file and update this section before distributing the repository publicly.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file
+for details.
