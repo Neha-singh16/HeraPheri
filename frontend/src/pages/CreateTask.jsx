@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../api/client.jsx";
 
-
 const initialForm = {
   title: "",
   description: "",
@@ -24,6 +23,13 @@ const NOMINATIM_URL = "https://nominatim.openstreetmap.org";
 
 export default function CreateTask() {
   const navigate = useNavigate();
+  const [aiPrompt, setAiPrompt] = useState("");
+
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const [aiError, setAiError] = useState("");
+
+  const [aiQuestions, setAiQuestions] = useState([]);
 
   const [form, setForm] = useState(initialForm);
 
@@ -85,6 +91,50 @@ export default function CreateTask() {
       controller.abort();
     };
   }, [form.addressText, locationQuery]);
+
+  async function generateWithAI() {
+    if (aiPrompt.trim().length < 10) {
+      setAiError("Describe what you need done in a little more detail.");
+
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiQuestions([]);
+
+    try {
+      const response = await api.post("/ai/task-draft", {
+        prompt: aiPrompt.trim(),
+      });
+
+      const draft = response.data.data;
+
+      setForm((current) => ({
+        ...current,
+
+        title: draft.title || current.title,
+
+        description: draft.description || current.description,
+
+        category: draft.category || current.category,
+
+        taskMode: draft.taskMode || current.taskMode,
+
+        riskLevel: draft.riskLevel || current.riskLevel,
+
+        proofType: draft.proofType || current.proofType,
+      }));
+
+      setAiQuestions(draft.clarifyingQuestions || []);
+    } catch (error) {
+      setAiError(
+        error.response?.data?.message || "Unable to generate an AI task draft.",
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   function selectLocation(location) {
     setForm({
@@ -263,6 +313,49 @@ export default function CreateTask() {
       {error && <div className="error-message">{error}</div>}
 
       <form className="task-form" onSubmit={handleSubmit}>
+        <section className="ai-copilot">
+          <div className="ai-copilot-header">
+            <div>
+              <p className="eyebrow">AI ASSISTANT</p>
+
+              <h2>Describe it. We'll structure it.</h2>
+
+              <p>
+                Tell HEREPHERI what you need in plain language and we'll prepare
+                the task for you.
+              </p>
+            </div>
+          </div>
+
+          <textarea
+            value={aiPrompt}
+            onChange={(event) => setAiPrompt(event.target.value)}
+            placeholder="Example: I need someone to pick up my documents from Pitampura tomorrow..."
+            rows={4}
+          />
+
+          {aiError && <div className="error-message">{aiError}</div>}
+
+          <button
+            type="button"
+            className="secondary-button ai-button"
+            disabled={aiLoading}
+            onClick={generateWithAI}
+          >
+            {aiLoading ? "Creating your draft..." : "Build task with AI"}
+          </button>
+
+          {aiQuestions.length > 0 && (
+            <div className="ai-questions">
+              <strong>You may want to clarify:</strong>
+
+              {aiQuestions.map((question, index) => (
+                <p key={index}>{question}</p>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="form-section">
           <h2>Task details</h2>
 
@@ -398,9 +491,17 @@ export default function CreateTask() {
               >
                 <option value="PHOTO">Photo</option>
 
-                <option value="TEXT">Text</option>
+                <option value="VIDEO">Video</option>
 
-                <option value="SCREENSHOT">Screenshot</option>
+                <option value="RECEIPT">Receipt</option>
+
+                <option value="DOCUMENT">Document</option>
+
+                <option value="OTP">OTP</option>
+
+                <option value="TEXT_RESULT">Text result</option>
+
+                <option value="FILE">File</option>
               </select>
             </label>
           </div>
@@ -452,7 +553,9 @@ export default function CreateTask() {
               onClick={useCurrentLocation}
               disabled={locationLoading}
             >
-              {locationLoading ? "Finding your location..." : "Use my current location"}
+              {locationLoading
+                ? "Finding your location..."
+                : "Use my current location"}
             </button>
 
             {locationError && (

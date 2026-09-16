@@ -17,6 +17,7 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@google/genai": "^2.22.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.4",

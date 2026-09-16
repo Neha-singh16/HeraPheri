@@ -25,6 +25,7 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 import earningsRoutes from "./routes/earningsRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import adminDisputeRoutes from "./routes/adminDisputeRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 import {
   authLimiter,
   paymentLimiter,
@@ -111,6 +112,8 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/earnings", earningsRoutes);
 app.use("/api/v1/admin/disputes", adminDisputeRoutes);
 app.use("/api/v1/admin", adminRoutes);
+
+app.use("/api/v1/ai", aiRoutes);
 
 app.get("/health", async (req, res) => {
   return res.status(200).json({
