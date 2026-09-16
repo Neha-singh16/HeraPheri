@@ -7,7 +7,13 @@ import { Task, TaskAssignment } from "../models/index.js";
 import { createTaskEvent } from "../services/taskEventService.js";
 import { createNotification } from "../services/notificationService.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
+import { emitNotificationToUser } from "../socket/index.js";
 import { processRefundForTask } from "../services/paymentService.js";
+
+import {
+  createTaskNotifications,
+  emitTaskNotifications,
+} from "../services/taskNotificationService.js";
 
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
@@ -45,33 +51,115 @@ const worker = new Worker(
 async function notifyDeadlineNear(taskId) {
   const task = await Task.findByPk(taskId);
 
-  if (!task || !["OPEN", "ASSIGNED", "IN_PROGRESS"].includes(task.status)) {
-    return { skipped: true, reason: "Task is no longer active." };
+  if (!task) {
+    return {
+      skipped: true,
+      reason: "Task not found.",
+    };
+  }
+
+  /*
+    OPEN:
+    only requester needs a warning because there
+    is no Executor yet.
+  */
+  if (task.status === "OPEN") {
+    const notifications = await createTaskNotifications({
+      taskId: task.id,
+
+      userIds: [task.requester_id],
+
+      type: "TASK_DEADLINE_NEAR",
+
+      title: "Task deadline is near",
+
+      message: `Your task "${task.title}" is due within one hour.`,
+
+      data: {
+        deadlineAt: task.deadline_at,
+      },
+    });
+
+    emitTaskNotifications(notifications);
+
+    emitTaskUpdated({
+      taskId: task.id,
+
+      userIds: [task.requester_id],
+
+      reason: "TASK_DEADLINE_NEAR",
+    });
+
+    return {
+      success: true,
+      taskId: task.id,
+      notified: "REQUESTER",
+    };
+  }
+
+  /*
+    ASSIGNED / IN_PROGRESS:
+    notify both participants.
+  */
+  if (task.status !== "ASSIGNED" && task.status !== "IN_PROGRESS") {
+    return {
+      skipped: true,
+
+      reason: `Task is ${task.status}; no deadline warning needed.`,
+    };
   }
 
   const assignment = await TaskAssignment.findOne({
     where: {
       task_id: taskId,
+
       status: "ACTIVE",
     },
   });
 
   if (!assignment) {
-    return { skipped: true, reason: "Task has no active Executor." };
+    return {
+      skipped: true,
+
+      reason: "Task has no active Executor.",
+    };
   }
 
-  await createNotification({
-    userId: assignment.executor_id,
+  const participantIds = [task.requester_id, assignment.executor_id];
+
+  const notifications = await createTaskNotifications({
+    taskId: task.id,
+
+    userIds: participantIds,
+
     type: "TASK_DEADLINE_NEAR",
+
     title: "Task deadline is near",
+
     message: `The deadline for "${task.title}" is within one hour.`,
+
     data: {
-      taskId: task.id,
       deadlineAt: task.deadline_at,
     },
   });
 
-  return { success: true, taskId };
+  emitTaskNotifications(notifications);
+
+  emitTaskUpdated({
+    taskId: task.id,
+
+    userIds: participantIds,
+
+    reason: "TASK_DEADLINE_NEAR",
+  });
+
+  return {
+    success: true,
+
+    taskId: task.id,
+
+    notified: participantIds,
+  };
 }
 
 // Automatically expire an active task after its deadline.
@@ -100,62 +188,115 @@ async function expireTask(taskId) {
       };
     }
 
-    if (task.status !== "OPEN") {
+    /*
+      OPEN tasks genuinely expire.
+    */
+    if (task.status === "OPEN") {
+      await task.update(
+        {
+          status: "EXPIRED",
+        },
+        {
+          transaction,
+        },
+      );
+
+      await createTaskEvent({
+        taskId: task.id,
+        actorUserId: task.requester_id,
+        eventType: "TASK_EXPIRED",
+        metadata: {
+          deadlineAt: task.deadline_at,
+        },
+        transaction,
+      });
+
+      const notification = await createNotification({
+        userId: task.requester_id,
+        type: "TASK_EXPIRED",
+        title: "Task expired",
+        message: `Your task "${task.title}" expired because the deadline passed.`,
+        data: {
+          taskId: task.id,
+          deadlineAt: task.deadline_at,
+        },
+        transaction,
+      });
+
       await transaction.commit();
 
+      emitTaskUpdated({
+        taskId: task.id,
+        userIds: [task.requester_id],
+        reason: "TASK_EXPIRED",
+      });
+
+      try {
+        emitNotificationToUser(task.requester_id, notification);
+      } catch (socketError) {
+        console.error("Realtime notification failed:", socketError.message);
+      }
+
+      console.log(`⏰ Task expired: ${task.id}`);
+
       return {
-        skipped: true,
-        reason: `Task is ${task.status}; only OPEN tasks expire automatically.`,
+        success: true,
+        taskId: task.id,
+        status: "EXPIRED",
       };
     }
 
-    await task.update(
-      {
-        status: "EXPIRED",
-      },
-
-      {
+    /*
+      Assigned / in-progress tasks should not be automatically killed.
+    */
+    if (task.status === "ASSIGNED" || task.status === "IN_PROGRESS") {
+      const assignment = await TaskAssignment.findOne({
+        where: {
+          task_id: task.id,
+          status: "ACTIVE",
+        },
         transaction,
-      },
-    );
+      });
 
-    await createTaskEvent({
-      taskId: task.id,
-      actorUserId: task.requester_id,
-      eventType: "TASK_EXPIRED",
-      metadata: {
-        deadlineAt: task.deadline_at,
-      },
-      transaction,
-    });
+      if (assignment) {
+        const participantIds = [task.requester_id, assignment.executor_id];
 
-    const notification =
-      await createNotification({
-      userId: task.requester_id,
-      type: "TASK_EXPIRED",
-      title: "Task expired",
-      message: `Your task "${task.title}" expired because the deadline passed.`,
-      data: {
-        taskId: task.id,
-        deadlineAt: task.deadline_at,
-      },
-      transaction,
-    });
+        const notifications = await createTaskNotifications({
+          taskId: task.id,
+          userIds: participantIds,
+          type: "TASK_DEADLINE_PASSED",
+          title: "Task deadline passed",
+          message: `The deadline for "${task.title}" has passed while the task is still active.`,
+          data: {
+            deadlineAt: task.deadline_at,
+          },
+          transaction,
+        });
+
+        await transaction.commit();
+
+        emitTaskUpdated({
+          taskId: task.id,
+          userIds: participantIds,
+          reason: "TASK_DEADLINE_PASSED",
+        });
+
+        emitTaskNotifications(notifications);
+
+        return {
+          success: true,
+          taskId: task.id,
+          status: task.status,
+          overdue: true,
+        };
+      }
+    }
 
     await transaction.commit();
 
-    emitTaskUpdated({
-      taskId,
-      userIds: [task.requester_id],
-      reason: "TASK_EXPIRED",
-    });
-
-    console.log(`⏰ Task expired: ${task.id}`);
-
     return {
-      success: true,
-      taskId: task.id,
-      status: "EXPIRED",
+      skipped: true,
+      reason: `Task is ${task.status}; no deadline action required.`,
     };
   } catch (error) {
     await transaction.rollback();

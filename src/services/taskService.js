@@ -3,6 +3,8 @@ import sequelize from "../config/database.js";
 
 import { Task, Payment, TaskAssignment } from "../models/index.js";
 import { emitTaskUpdated } from "../socket/taskEvents.js";
+import { emitNotificationToUser } from "../socket/index.js";
+import { createNotification } from "./notificationService.js";
 
 import { requestRefundForTask } from "./paymentService.js";
 
@@ -366,6 +368,8 @@ export async function updateTask({ taskId, requesterId, updates }) {
       }
     }
 
+    const deadlineChanged = safeUpdates.deadline_at !== undefined;
+
     // Handle location separately because it is a POINT.
     if (updates.latitude !== undefined || updates.longitude !== undefined) {
       if (updates.latitude == null || updates.longitude == null) {
@@ -418,6 +422,17 @@ export async function updateTask({ taskId, requesterId, updates }) {
 
     await transaction.commit();
 
+    if (deadlineChanged) {
+      try {
+        await scheduleTaskExpiration({
+          taskId: task.id,
+          deadlineAt: task.deadline_at,
+        });
+      } catch (jobError) {
+        console.error("Failed to reschedule task deadline jobs:", jobError);
+      }
+    }
+
     return task;
   } catch (error) {
     await transaction.rollback();
@@ -429,6 +444,7 @@ export async function updateTask({ taskId, requesterId, updates }) {
 export async function cancelTask({ taskId, requesterId }) {
   const transaction = await sequelize.transaction();
   let refundRequest = null;
+  let executorNotification = null;
 
   try {
     const task = await Task.findOne({
@@ -460,6 +476,18 @@ export async function cancelTask({ taskId, requesterId }) {
     let payment = null;
 
     if (assignment) {
+      executorNotification = await createNotification({
+        userId: assignment.executor_id,
+        type: "TASK_CANCELLED",
+        title: "Task cancelled",
+        message: "The requester cancelled the task.",
+        data: {
+          taskId: task.id,
+          assignmentId: assignment.id,
+        },
+        transaction,
+      });
+
       payment = await Payment.findOne({
         where: {
           task_id: task.id,
@@ -574,6 +602,17 @@ export async function cancelTask({ taskId, requesterId }) {
       Realtime after successful commit.
     */
     const executorId = assignment?.executor_id;
+
+    if (executorNotification) {
+      try {
+        emitNotificationToUser(
+          executorNotification.user_id,
+          executorNotification,
+        );
+      } catch (socketError) {
+        console.error("Realtime notification failed:", socketError.message);
+      }
+    }
 
     emitTaskUpdated({
       taskId: task.id,

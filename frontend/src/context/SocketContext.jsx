@@ -21,6 +21,9 @@ const TASK_EVENT_MESSAGES = {
   TASK_CANCELLED: "This task has been cancelled.",
   TASK_RELEASED: "The Executor released the task.",
   TASK_EXPIRED: "This task has expired.",
+  TASK_DEADLINE_NEAR: "This task's deadline is within one hour.",
+  TASK_DEADLINE_PASSED:
+    "A task deadline has passed and the task is still active.",
 };
 
 export function SocketProvider({ children }) {

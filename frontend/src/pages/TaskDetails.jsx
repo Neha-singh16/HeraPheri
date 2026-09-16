@@ -49,6 +49,8 @@ export default function TaskDetails() {
   const [error, setError] = useState("");
 
   const isRequester = task?.requester_id === user?.id;
+  const actingAsRequester = isRequester && !isExecutor;
+  const actingAsExecutor = isExecutor && !isRequester;
   const backPath = isExecutor ? "/find-tasks" : "/tasks";
   const backLabel = isExecutor ? "Back to Find Tasks" : "Back to My Tasks";
 
@@ -254,7 +256,7 @@ export default function TaskDetails() {
               REQUESTER: view suitable Executors
           ------------------------------------------- */}
 
-          {isRequester && task.status === "OPEN" && (
+          {actingAsRequester && task.status === "OPEN" && (
             <div className="detail-section">
               <h2>Matching</h2>
 
@@ -273,7 +275,7 @@ export default function TaskDetails() {
               EXECUTOR: accept an OPEN task
           ------------------------------------------- */}
 
-          {isExecutor && !isRequester && task.status === "OPEN" && (
+          {actingAsExecutor && task.status === "OPEN" && (
             <div className="detail-section">
               <h2>Want to take this task?</h2>
 
@@ -295,7 +297,7 @@ export default function TaskDetails() {
               REQUESTER: cancel OPEN task
           ------------------------------------------- */}
 
-          {isRequester && ["OPEN", "ASSIGNED"].includes(task.status) && (
+          {actingAsRequester && ["OPEN", "ASSIGNED"].includes(task.status) && (
             <div className="danger-zone">
               <h3>Cancel task</h3>
 
@@ -337,7 +339,7 @@ export default function TaskDetails() {
     REQUESTER: fund assigned task
 -------------------------------------------- */}
 
-          {isRequester &&
+          {actingAsRequester &&
             (task.status === "ASSIGNED" || task.status === "IN_PROGRESS") && (
               <div className="detail-section">
                 <h2>
@@ -377,7 +379,7 @@ export default function TaskDetails() {
     EXECUTOR: assigned task
 -------------------------------------------- */}
 
-          {isExecutor && task.status === "ASSIGNED" && (
+          {actingAsExecutor && task.status === "ASSIGNED" && (
             <div className="detail-section">
               <h2>Task assigned</h2>
 
@@ -427,7 +429,7 @@ export default function TaskDetails() {
     EXECUTOR: task in progress
 -------------------------------------------- */}
 
-          {isExecutor && task.status === "IN_PROGRESS" && (
+          {actingAsExecutor && task.status === "IN_PROGRESS" && (
             <div className="detail-section">
               <h2>Task in progress</h2>
 
@@ -443,7 +445,7 @@ export default function TaskDetails() {
     EXECUTOR: waiting for requester approval
 -------------------------------------------- */}
 
-          {isExecutor && task.status === "PENDING_APPROVAL" && (
+          {actingAsExecutor && task.status === "PENDING_APPROVAL" && (
             <div className="detail-section">
               <h2>Work submitted</h2>
 
@@ -467,7 +469,7 @@ export default function TaskDetails() {
     EXECUTOR: completed
 -------------------------------------------- */}
 
-          {isExecutor && task.status === "COMPLETED" && (
+          {actingAsExecutor && task.status === "COMPLETED" && (
             <div className="detail-section">
               <h2>Task completed ✓</h2>
 
@@ -484,7 +486,7 @@ export default function TaskDetails() {
 
           {/* EXECUTOR: task in progress */}
 
-          {!isRequester && task.status === "IN_PROGRESS" && (
+          {actingAsExecutor && task.status === "IN_PROGRESS" && (
             <div className="detail-section">
               <h2>Task in progress</h2>
 
@@ -498,7 +500,7 @@ export default function TaskDetails() {
 
           {/* REQUESTER: review */}
 
-          {isRequester && task.status === "PENDING_APPROVAL" && (
+          {actingAsRequester && task.status === "PENDING_APPROVAL" && (
             <div className="detail-section">
               <h2>Review submitted work</h2>
 

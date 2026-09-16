@@ -13,6 +13,7 @@ import {
 } from "../models/index.js";
 
 import { createTaskEvent } from "./taskEventService.js";
+import { scheduleDeadlineWarningForAssignment } from "./taskJobService.js";
 
 const MAX_ACTIVE_TASKS = 3;
 const LOCATION_FRESHNESS_MINUTES = 30;
@@ -277,6 +278,17 @@ export async function acceptTask(taskId, executorId) {
       userIds: [task.requester_id, executorId],
       reason: "TASK_ASSIGNED",
     });
+
+    try {
+      await scheduleDeadlineWarningForAssignment({
+        taskId: task.id,
+        assignmentId: assignment.id,
+        deadlineAt: task.deadline_at,
+      });
+    } catch (jobError) {
+      console.error("Failed to schedule late deadline warning:", jobError);
+    }
+
     try {
       emitNotificationToUser(task.requester_id, notification);
     } catch (socketError) {
@@ -404,6 +416,18 @@ export async function releaseTask({ taskId, executorId }) {
       transaction,
     });
 
+    const requesterNotification = await createNotification({
+      userId: task.requester_id,
+      type: "TASK_RELEASED",
+      title: "Executor released the task",
+      message: "The assigned Executor released your task back to the marketplace.",
+      data: {
+        taskId: task.id,
+        assignmentId: assignment.id,
+      },
+      transaction,
+    });
+
     await transaction.commit();
 
     emitTaskUpdated({
@@ -411,6 +435,12 @@ export async function releaseTask({ taskId, executorId }) {
       userIds: [task.requester_id, executorId],
       reason: "TASK_RELEASED",
     });
+
+    try {
+      emitNotificationToUser(task.requester_id, requesterNotification);
+    } catch (socketError) {
+      console.error("Realtime notification failed:", socketError.message);
+    }
 
     return task;
   } catch (error) {
