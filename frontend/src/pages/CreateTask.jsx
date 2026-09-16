@@ -128,8 +128,10 @@ export default function CreateTask() {
 
       setAiQuestions(draft.clarifyingQuestions || []);
     } catch (error) {
+      const message = error.response?.data?.message;
+
       setAiError(
-        error.response?.data?.message || "Unable to generate an AI task draft.",
+        message || "AI couldn't generate the task right now. Please try again.",
       );
     } finally {
       setAiLoading(false);

@@ -137,21 +137,51 @@ User request:
 ${userInput.trim()}
 `;
 
-  const response = await gemini.models.generateContent({
-    model: GEMINI_MODEL,
+  let response;
 
-    contents: prompt,
+  try {
+    response = await gemini.models.generateContent({
+      model: GEMINI_MODEL,
 
-    config: {
-      responseMimeType: "application/json",
+      contents: prompt,
 
-      responseJsonSchema: taskDraftSchema,
+      config: {
+        responseMimeType: "application/json",
 
-      temperature: 0.2,
+        responseJsonSchema: taskDraftSchema,
 
-      maxOutputTokens: 800,
-    },
-  });
+        maxOutputTokens: 800,
+      },
+    });
+  } catch (error) {
+    console.error("Gemini API error:", {
+      message: error.message,
+      model: GEMINI_MODEL,
+      status: error.status || error.code || null,
+    });
+
+    const status = error.status || error.code;
+
+    if (status === 429) {
+      throw new Error(
+        "AI is temporarily busy. Please try again in a moment.",
+      );
+    }
+
+    if (status === 503) {
+      throw new Error(
+        "AI is temporarily unavailable due to high demand. Please try again shortly.",
+      );
+    }
+
+    if (status === 401 || status === 403) {
+      throw new Error(
+        "AI configuration is invalid. Please contact the administrator.",
+      );
+    }
+
+    throw new Error("Unable to generate the AI task draft right now.");
+  }
 
   const text = response.text?.trim();
 
