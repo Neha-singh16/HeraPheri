@@ -3827,6 +3827,63 @@ iframe {
 }
 
 /* =========================================
+   AUTHENTICATION ATMOSPHERE
+========================================= */
+.auth-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 107, 34, 0.08), transparent 30%),
+    radial-gradient(circle at 85% 80%, rgba(255, 180, 120, 0.06), transparent 32%),
+    #f7f8f7;
+}
+
+.auth-page::before,
+.auth-page::after {
+  position: absolute;
+  z-index: -1;
+  width: min(58vw, 720px);
+  height: min(28vw, 340px);
+  border: 1px solid rgba(255, 107, 34, 0.07);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+  transform: rotate(-18deg);
+}
+
+.auth-page::before {
+  top: -13%;
+  left: -12%;
+}
+
+.auth-page::after {
+  right: -14%;
+  bottom: -13%;
+  border-color: rgba(17, 19, 21, 0.045);
+  transform: rotate(24deg);
+}
+
+.auth-card {
+  position: relative;
+  box-shadow: 0 20px 60px rgba(17, 19, 21, 0.08);
+}
+
+@media (max-width: 767px) {
+  .auth-page {
+    min-height: 100svh;
+    padding: 20px 16px;
+  }
+
+  .auth-page::before,
+  .auth-page::after {
+    width: 90vw;
+    height: 42vw;
+    opacity: 0.55;
+  }
+}
+
+/* =========================================
    ADMIN RESPONSIVE FINISHING PASS
 ========================================= */
 .admin-main-content {
