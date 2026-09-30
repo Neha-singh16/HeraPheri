@@ -8,7 +8,7 @@ import ModeSwitcher from "./ModeSwitcher.jsx";
 
 import { useMode } from "../context/ModeContext.jsx";
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
   const { isAdmin } = useMode();
@@ -63,6 +63,17 @@ export default function Navbar() {
 
   return (
     <header className="navbar">
+      <button
+        className="mobile-menu-button"
+        type="button"
+        aria-label="Open navigation"
+        onClick={onMenuClick}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
       <Link to="/dashboard" className="navbar-brand">
         <span>HERE</span>
         <strong>PHERI</strong>

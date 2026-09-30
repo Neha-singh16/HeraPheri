@@ -3,13 +3,24 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext.jsx";
 
-export default function AdminNavbar() {
+export default function AdminNavbar({ onMenuClick }) {
   const { user, logout } = useAuth();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="navbar admin-navbar">
+      <button
+        className="mobile-menu-button"
+        type="button"
+        aria-label="Open navigation"
+        onClick={onMenuClick}
+      >
+        <span />
+        <span />
+        <span />
+      </button>
+
       <Link to="/admin" className="navbar-brand">
         <span>HERE</span>
         <strong>PHERI</strong>

@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 
 import { useMode } from "../context/ModeContext.jsx";
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   const { mode } = useMode();
 
   const requesterNavigation = [
@@ -87,11 +87,22 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
+      <button
+        className="sidebar-close-button"
+        type="button"
+        aria-label="Close navigation"
+        onClick={onNavigate}
+      >
+        <span />
+        <span />
+      </button>
+
       <nav>
         {navigation.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={onNavigate}
             className={({ isActive }) =>
               isActive ? "sidebar-link active" : "sidebar-link"
             }
@@ -104,7 +115,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <NavLink to="/settings" className="sidebar-link">
+        <NavLink to="/settings" className="sidebar-link" onClick={onNavigate}>
           <span>⚙</span>
 
           <span>Settings</span>
