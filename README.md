@@ -1,12 +1,57 @@
 # HEREPHERI
 
-HEREPHERI is a two-sided task marketplace for delegating local and digital work.
-Requesters post tasks, Executors discover and accept suitable work, and both sides
-follow a controlled workflow from assignment through proof, approval, dispute
-handling, and payment settlement.
+HeraPheri is a two-sided marketplace for getting local and digital work done.
+The product keeps the requester and Executor workflow in one place: post a
+task, match with an Executor, complete the work, review proof, and settle the
+payment.
 
-This repository contains the HEREPHERI API, background worker, database migrations,
-and React web application.
+This repository contains the HEREPHERI API, background worker, database
+migrations, and React web application.
+
+## Quick Start
+
+1. Install Node.js 20+, MySQL 8+, Redis 6+, and npm.
+2. Install dependencies from the repository root and the frontend directory.
+3. Create the backend `.env` and frontend `frontend/.env.local` files described
+     in [Environment Configuration](#environment-configuration).
+4. Create the MySQL database and apply migrations.
+5. Start the API, worker, and frontend in separate terminals.
+
+```bash
+npm install
+cd frontend && npm install && cd ..
+npm run db:migrate
+```
+
+Terminal 1, API:
+
+```bash
+npm run dev
+```
+
+Terminal 2, worker:
+
+```bash
+npm run worker
+```
+
+Terminal 3, frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open `http://localhost:5173`. Confirm the API is running before using an
+authenticated screen:
+
+```bash
+curl http://localhost:5000/health
+```
+
+The frontend and Socket.IO client use port `5000` by default. If the API is not
+running, dashboards, notifications, admin pages, and realtime updates will show
+connection errors even though the frontend itself loads.
 
 ## Product Flow
 
@@ -32,6 +77,17 @@ Supported task categories are `GO`, `GET`, `CHECK`, and `DIGITAL`. Tasks can be
 proof requirements.
 
 ## Current Capabilities
+
+### Frontend experience
+
+- Responsive requester, Executor, and Admin Console workflows.
+- Persistent sidebar navigation on desktop and an accessible drawer on tablet
+     and mobile widths.
+- Responsive dashboard statistics, action cards, task cards, forms, payment
+     summaries, and admin data tables.
+- Mobile-safe authentication pages with a light neutral HeraPheri atmosphere,
+     warm orange accents, and the existing form behavior preserved.
+- Realtime task notifications and toast feedback through Socket.IO.
 
 ### Requesters
 
@@ -256,6 +312,21 @@ The default local URLs are:
 - API: `http://localhost:5000`
 - Health check: `http://localhost:5000/health`
 - API base path: `http://localhost:5000/api/v1`
+
+### Local startup troubleshooting
+
+If the browser reports `ERR_CONNECTION_REFUSED` for `localhost:5000`, the API
+process has not reached its listen step. Check that:
+
+- the backend `.env` exists at the repository root;
+- MySQL is running and the configured database credentials are valid;
+- Redis is running at the configured `REDIS_URL`;
+- the API was started with `npm run dev` from the repository root; and
+- `frontend/.env.local` contains matching `VITE_API_URL` and `VITE_SOCKET_URL`
+     values.
+
+The backend must successfully connect to MySQL and Redis before it starts the
+HTTP and Socket.IO server.
 
 For a production-style frontend preview:
 
