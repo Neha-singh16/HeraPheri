@@ -31,6 +31,8 @@ import Reputation from "./pages/Reputation.jsx";
 import ExecutorProfile from "./pages/ExecutorProfile.jsx";
 import ExecutorAssignments from "./pages/ExecutorAssignments.jsx";
 import Earnings from "./pages/Earnings.jsx";
+import Profile from "./pages/Profile.jsx";
+import Settings from "./pages/Settings.jsx";
 
 import AdminDisputes from "./pages/AdminDisputes.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
@@ -159,15 +161,9 @@ function App() {
 
               <Route path="/reputation" element={<Reputation />} />
 
-              <Route
-                path="/profile"
-                element={<div>Profile coming soon.</div>}
-              />
+              <Route path="/profile" element={<Profile />} />
 
-              <Route
-                path="/settings"
-                element={<div>Settings coming soon.</div>}
-              />
+              <Route path="/settings" element={<Settings />} />
             </Route>
 
             {/* ADMIN APPLICATION */}

@@ -132,6 +132,11 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function updateUser(nextUser) {
+    localStorage.setItem("user", JSON.stringify(nextUser));
+    setUser(nextUser);
+  }
+
   const isAuthenticated = Boolean(user);
 
   return (
@@ -144,6 +149,7 @@ export function AuthProvider({ children }) {
         register,
         loginWithGoogle,
         logout,
+        updateUser,
       }}
     >
       {children}

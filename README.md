@@ -356,12 +356,15 @@ appropriate, and response data under `data` for successful operations.
 | `POST` | `/api/v1/auth/google` | Authenticate with a Google ID token |
 | `POST` | `/api/v1/auth/refresh` | Rotate/refresh an access token |
 | `POST` | `/api/v1/auth/logout` | Revoke a refresh token |
+| `POST` | `/api/v1/auth/change-password` | Change the authenticated local account password |
 
 ### Users, profiles, and verification
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/users/me` | Read the current user |
+| `PATCH` | `/api/v1/users/me` | Update the authenticated user's name and phone |
+| `PATCH` | `/api/v1/users/me/preferences` | Update authenticated notification preferences |
 | `GET` | `/api/v1/executor-profile` | Read the current Executor profile |
 | `POST` | `/api/v1/executor-profile` | Create an Executor profile |
 | `PATCH` | `/api/v1/executor-profile` | Update an Executor profile |

@@ -3318,6 +3318,313 @@ form button:hover,
 }
 
 /* =========================================
+   ACCOUNT PAGES
+========================================= */
+.account-page {
+  max-width: 1180px;
+}
+
+.account-layout,
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.account-identity-card,
+.account-link-card,
+.account-danger-card,
+.settings-section {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 0;
+  border-radius: 14px;
+}
+
+.account-profile-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-avatar {
+  display: grid;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  background: var(--ink);
+  border-radius: 18px;
+  color: white;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.account-profile-heading h2,
+.account-link-card h2,
+.account-danger-card h2,
+.settings-section h2 {
+  margin: 4px 0 6px;
+  color: var(--ink);
+  font-size: 1.25rem;
+  letter-spacing: -0.05em;
+}
+
+.account-profile-heading p:last-child,
+.account-link-card p:not(.eyebrow),
+.account-danger-card p,
+.settings-section-heading p:not(.eyebrow),
+.settings-info-card p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.account-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.account-details > div {
+  min-width: 0;
+  padding: 15px;
+  background: var(--canvas);
+  border-radius: 10px;
+}
+
+.account-details span,
+.account-details strong {
+  display: block;
+}
+
+.account-details span {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.account-details strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.account-details small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.account-edit-form,
+.settings-password-form {
+  margin-top: 24px;
+}
+
+.account-edit-form label,
+.settings-password-form label {
+  margin-bottom: 16px;
+}
+
+.account-edit-note {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 20px;
+  padding: 14px;
+  background: var(--canvas);
+  border-radius: 10px;
+}
+
+.account-edit-note strong,
+.account-edit-note span {
+  color: var(--ink);
+}
+
+.account-edit-note small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.account-edit-actions {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+.account-edit-actions button {
+  width: auto;
+}
+
+.settings-password-form small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.settings-password-form button {
+  width: auto;
+  margin-top: 4px;
+}
+
+.account-side-column {
+  display: grid;
+  gap: 18px;
+}
+
+.account-link-card,
+.account-danger-card {
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.account-link-actions {
+  display: grid;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.account-link-actions .secondary-button,
+.account-danger-card .secondary-button {
+  width: 100%;
+  text-decoration: none;
+  text-align: center;
+}
+
+.account-danger-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-danger-card .secondary-button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.settings-layout {
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+}
+
+.settings-section {
+  padding: 28px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.settings-section-heading {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-list {
+  display: grid;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.settings-row span {
+  min-width: 0;
+}
+
+.settings-row strong,
+.settings-row small {
+  display: block;
+}
+
+.settings-row strong {
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+
+.settings-row small {
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.settings-row input[type="checkbox"] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--orange);
+}
+
+.settings-saved {
+  margin: 16px 0 0;
+  color: #23713d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.settings-info-card {
+  align-self: stretch;
+}
+
+.settings-danger-card {
+  align-self: stretch;
+  min-height: 100%;
+}
+
+@media (max-width: 800px) {
+  .account-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .account-details {
+    grid-template-columns: 1fr;
+  }
+
+  .account-profile-heading {
+    align-items: flex-start;
+  }
+
+  .account-danger-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-danger-card .secondary-button {
+    width: 100%;
+  }
+
+  .account-edit-actions,
+  .settings-password-form button {
+    flex-direction: column-reverse;
+  }
+
+  .account-edit-actions button,
+  .settings-password-form button {
+    width: 100%;
+  }
+
+  .settings-section {
+    padding: 22px 18px;
+  }
+}
+
+/* =========================================
    RESPONSIVE LAYOUT SYSTEM
 ========================================= */
 html,

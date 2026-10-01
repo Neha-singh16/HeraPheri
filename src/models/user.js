@@ -50,6 +50,10 @@ const User = sequelize.define(
       allowNull: true,
       unique: true,
     },
+    notification_preferences: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
     account_status: {
       type: DataTypes.ENUM("ACTIVE", "SUSPENDED", "BANNED", "DEACTIVATED"),
       allowNull: false,
