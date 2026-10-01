@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node src/test-risk-rules.js",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "start": "npm run db:migrate && node src/server.js",
     "worker": "node src/workers/taskWorker.js",
     "db:migrate": "npx sequelize-cli db:migrate --config src/config/sequelize-config.cjs",
     "db:migrate:undo": "npx sequelize-cli db:migrate:undo --config src/config/sequelize-config.cjs",
@@ -33,10 +33,10 @@
     "razorpay": "^2.9.8",
     "redis": "^6.2.1",
     "sequelize": "^6.37.8",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "sequelize-cli": "^6.6.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "sequelize-cli": "^6.6.5"
+    "nodemon": "^3.1.14"
   }
 }
